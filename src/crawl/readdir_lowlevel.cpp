@@ -1,24 +1,23 @@
+#include <sys/syscall.h>
+#include <sys/attr.h>
 #include <iostream>
-#include <filesystem>
-#include <typeinfo>
-#include <cstdlib>
-#include <chrono>
-#include <dirent.h>
-#include <string_view>
+#include <sys/errno.h>
+#include <sys/vnode.h>
 #include <unistd.h>
 #include <fcntl.h>
-#include <sys/attr.h>
-#include <sys/vnode.h>
+#include <stdio.h>
+#include <assert.h>
+#include <stddef.h>
+#include <string.h>
+#include <stdbool.h>
 #include "../schema/schema_objects.h"
-#include <typeinfo>
-
 
 
 namespace crawl {
 
 
     using namespace schema;
-    namespace filesystem = std::filesystem;
+    // namespace filesystem = std::filesystem;
 
 
     // turn string view into char array of fixed length
@@ -41,51 +40,77 @@ namespace crawl {
 
 
 
-    void crawl_filesystem(const std::string&  starting_path) {
+    // void crawl_filesystem(const std::string&  starting_path) {
+    void crawl_filesystem(const char  *starting_path) {
 
 
         int counter{0};
-        std::cout << filesystem::canonical(starting_path).string() << std::endl;
+        // std::cout << filesystem::canonical(starting_path).string() << std::endl;
 
-        int open_status = open(starting_path.c_str(), O_CLOEXEC | O_RDONLY | O_DIRECTORY);
+        struct attrlist attributes;
+        //buffer
+        char readinto[1024 * 64];
+        memset(&attributes, 0, sizeof(attributes));
+
+
+        // file metadata categories
+        attributes.bitmapcount = ATTR_BIT_MAP_COUNT;
+
+        // common attributes for all files and dirs
+        attributes.commonattr = ATTR_CMN_NAME | ATTR_CMN_RETURNED_ATTRS  //name
+        | ATTR_CMN_ACCESSMASK //perm
+        | ATTR_CMN_CRTIME //created
+        | ATTR_CMN_DOCUMENT_ID //persistent doc id
+        | ATTR_CMN_FILEID //File ID u_int64_t
+        | ATTR_CMN_PARENTID // parent file id
+        | ATTR_CMN_OWNERID //not sure
+        | ATTR_CMN_FULLPATH // maybe full path?
+        | ATTR_CMN_ACCESSMASK // mode maybe?
+        ;
+
+        //other
+        attributes.fileattr = ATTR_FILE_TOTALSIZE | ATTR_FILE_FILETYPE ; // 2
+
+
+        int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY,0);
+
 
         std::cout << " status "<< open_status << std::endl;
         if (open_status == -1) {
-            std::cout << "cant open: " << starting_path.c_str() << std::endl;
+            std::cout << "cant open: " << *starting_path << std::endl;
             return;
         }
 
-        struct attrlist attributes = {};
+        uint64_t options = 0;
+        int numatts = getattrlistbulk(open_status, &attributes, &readinto[0], sizeof(readinto), options);
 
+        std::cout << open_status << std::endl;
+        std::cout << &attributes << std::endl;
+        std::cout << &readinto[0] << std::endl;
+        std::cout << static_cast<void*>(&readinto[0])  << std::endl;
+        std::cout << sizeof(readinto) << std::endl;
 
-        std::cout <<  ATTR_BIT_MAP_COUNT << std::endl;
-        std::cout <<   ATTR_CMN_NAME <<   std::endl;
-        std::cout <<   ATTR_CMN_FILEID <<   std::endl;
-        std::cout <<   ATTR_CMN_OBJID <<   std::endl;
-        std::cout <<   std::endl;
-
-
-
+        std::cout << " atts returned " << numatts << std::endl;
 
         /*
          recursively crawl and write structs
          */
 
-        DIR* starting_directory_pointer = opendir(starting_path.c_str());
-        std::cout <<  "what is this" << starting_path.c_str() << std::endl;
+        // DIR* starting_directory_pointer = opendir(starting_path);
+        // // std::cout <<  "what is this" << starting_path << std::endl;
+        //
+        // std::cout << " dir pointer " << starting_directory_pointer << std::endl;
+        //
+        // struct dirent* directory_list;
 
-        std::cout << " dir pointer " << starting_directory_pointer << std::endl;
-
-        struct dirent* directory_list;
-
-        while (readdir(starting_directory_pointer) != nullptr) {
-            auto lst  = readdir(starting_directory_pointer);
-            std::cout << lst->d_name  << std::endl;
-            std::cout << lst->d_namlen  << std::endl;
-            // std::cout << lst->d_type  << std::endl;
-            std::cout << lst->d_ino  << std::endl;
-
-        }
+        // while (readdir(starting_directory_pointer) != nullptr) {
+        //     auto lst  = readdir(starting_directory_pointer);
+        //     std::cout << lst->d_name  << std::endl;
+        //     std::cout << lst->d_namlen  << std::endl;
+        //     // std::cout << lst->d_type  << std::endl;
+        //     std::cout << lst->d_ino  << std::endl;
+        //
+        // }
 
 
 
@@ -153,15 +178,15 @@ namespace crawl {
 int main() {
 
 
-    std::filesystem::directory_entry starting("/Users/arielwhittingham/Downloads/demo"); //test di
-    // std::filesystem::directory_entry starting(std::getenv("HOME"));
-    std::cout << starting.path() << std::endl;
+    // std::filesystem::directory_entry starting("/Users/arielwhittingham/Downloads/demo/"); //test di
+    // // std::filesystem::directory_entry starting(std::getenv("HOME"));
+    // std::cout << starting.path() << std::endl;
 
-    crawl::crawl_filesystem(starting.path());
+    crawl::crawl_filesystem("/Users/arielwhittingham/Downloads/demo/");
 
-    std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
-
-    std::cout << starting.exists() << "\n";
+    // std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
+    //
+    // std::cout << starting.exists() << "\n";
 
     schema::FileRecord* random_record;
     // random_record->file_name = "Ariel";

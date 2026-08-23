@@ -7,7 +7,7 @@
 
 namespace schema {
     struct FileRecord {
-        std::array<char, 1024> full_path;
+        std::array<char, 1024> full_path;// need to get this reursively
         std::array<char, 255> file_name;
         std::array<char, 20> type;
         std::uint64_t size_bytes;
