@@ -1,0 +1,20 @@
+services:
+  ubuntu-base-env:
+    image: ubuntu:26.04
+    container_name: ubase
+    build:
+      # 1. Context points to the source code relative to this compose file
+      context: ../
+      # 2. Path to the Dockerfile relative to the context defined above
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ../src:/code
+    entrypoint: ["/bin/bash"]
+
+      # 3. what is source code used for?
+
+#    # 4. what is the env file
+#    env_file:
+#      - ../.env
