@@ -17,15 +17,17 @@ namespace crawl {
 
 
     struct raw_bytes_returned {
-        uint32_t length;               // size of this file's chunk
+        uint32_t length;                // size of this file's chunk
         attribute_set_t returned_attrs; // ATTR_CMN_RETURNED_ATTRS reference to all the attributes that get returned
         attrreference_t name_ref;       // pointer to length of string names
-        mode_t permissions;            //  ATTR_CMN_ACCESSMASK
-        timespec crtime;              // ATTR_CMN_CRTIME
-        uint32_t document_id;         // From ATTR_CMN_DOCUMENT_ID
-        uint64_t file_id;              // From ATTR_CMN_FILEID (u_int64_t)
-        u_int64_t parent_id;              // From ATTR_CMN_PARENTID(u_int64_t)
-        uid_t owner_id;                // From ATTR_CMN_OWNERID
+        mode_t permissions;             //  ATTR_CMN_ACCESSMASK
+        timespec crtime;                // ATTR_CMN_CRTIME
+        uint32_t document_id;           // From ATTR_CMN_DOCUMENT_ID
+        uint32_t file_id;              // From ATTR_CMN_FILEID (u_int64_t)
+        uint32_t parent_id;            // From ATTR_CMN_PARENTID(u_int64_t)
+        uid_t owner_id;                 // From ATTR_CMN_OWNERID
+        off_t total_size;               // off_t
+        u_int32_t access_mask;          //
 
     } __attribute__((aligned(4)));     // alighnment rule
 
@@ -118,7 +120,7 @@ namespace crawl {
             std::string filename(name_pointer, buff_entry->name_ref.attr_length);
 
             std::cout << "#  " <<
-                entryindex << "entry_name (file name)" << filename << "\n";
+                entryindex << "\n\n  entry_name (file name): " << filename << "\n";
             std::cout << " entry_len: " <<
                 buff_entry->length << " bytes\n";
             std::cout << " inode (file_id): " <<
@@ -131,6 +133,12 @@ namespace crawl {
             << buff_entry->document_id << "\n" << std::endl;
             std::cout << " tv_sec: " <<
                 buff_entry->crtime.tv_sec << "\n" << std::endl;
+            // std::cout << " access_mask: " <<
+            //     buff_entry->access_mask  << "\n" << std::endl;
+            // std::cout << " parent_id: " <<
+            //     buff_entry->parent_id << "\n" << std::endl;
+            // std::cout << " total_size: " <<
+            //     buff_entry->total_size << "\n" << std::endl;
 
             char* ref_ptr = bufferstart + 24;
 
@@ -251,7 +259,7 @@ int main() {
     // // std::filesystem::directory_entry starting(std::getenv("HOME"));
     // std::cout << starting.path() << std::endl;
 
-    crawl::crawl_filesystem("/Users/arielwhittingham/Downloads/");
+    crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_test");
 
     // std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
     //
