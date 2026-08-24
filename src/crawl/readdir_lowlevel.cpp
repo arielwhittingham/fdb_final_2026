@@ -6,19 +6,38 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
-#include <assert.h>
 #include <stddef.h>
 #include <string.h>
-#include <stdbool.h>
 #include "../schema/schema_objects.h"
-
 
 namespace crawl {
 
 
     using namespace schema;
-    // namespace filesystem = std::filesystem;
 
+
+    struct raw_bytes_returned {
+        uint32_t length;               // size of this file's chunk
+        attribute_set_t returned_attrs; // ATTR_CMN_RETURNED_ATTRS reference to all the attributes that get returned
+        attrreference_t name_ref;       // pointer to length of string names
+        mode_t permissions;            //  ATTR_CMN_ACCESSMASK
+        timespec crtime;              // ATTR_CMN_CRTIME
+        uint32_t document_id;         // From ATTR_CMN_DOCUMENT_ID
+        uint64_t file_id;              // From ATTR_CMN_FILEID (u_int64_t)
+        u_int64_t parent_id;              // From ATTR_CMN_PARENTID(u_int64_t)
+        uid_t owner_id;                // From ATTR_CMN_OWNERID
+
+    } __attribute__((aligned(4)));     // alighnment rule
+
+    // print out raw bytes in HEX
+    void hexDump(const void* address, int len) {
+        const unsigned char* p = reinterpret_cast<const unsigned char*>(address);
+        for (int i = 0; i < len; i++) {
+            printf("%02x ", p[i]);
+            if ((i + 1) % 16 == 0) printf("\n");
+        }
+        printf("\n");
+    }
 
     // turn string view into char array of fixed length
     // this is for writing to the char members of the file record struct
@@ -36,18 +55,10 @@ namespace crawl {
     }
 
 
-
-
-
-
     // void crawl_filesystem(const std::string&  starting_path) {
     void crawl_filesystem(const char  *starting_path) {
 
-
-        int counter{0};
-        // std::cout << filesystem::canonical(starting_path).string() << std::endl;
-
-        struct attrlist attributes;
+        struct ::attrlist attributes;
         //buffer
         char readinto[1024 * 64];
         memset(&attributes, 0, sizeof(attributes));
@@ -64,14 +75,13 @@ namespace crawl {
         | ATTR_CMN_FILEID //File ID u_int64_t
         | ATTR_CMN_PARENTID // parent file id
         | ATTR_CMN_OWNERID //not sure
-        | ATTR_CMN_FULLPATH // maybe full path?
         | ATTR_CMN_ACCESSMASK // mode maybe?
         ;
 
         //other
         attributes.fileattr = ATTR_FILE_TOTALSIZE | ATTR_FILE_FILETYPE ; // 2
 
-
+        // make sure starting path can open properly with the correct features
         int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY,0);
 
 
@@ -82,18 +92,89 @@ namespace crawl {
         }
 
         uint64_t options = 0;
+        // need to mov this inside a later while-loop
         int numatts = getattrlistbulk(open_status, &attributes, &readinto[0], sizeof(readinto), options);
 
-        std::cout << open_status << std::endl;
-        std::cout << &attributes << std::endl;
-        std::cout << &readinto[0] << std::endl;
-        std::cout << static_cast<void*>(&readinto[0])  << std::endl;
-        std::cout << sizeof(readinto) << std::endl;
+        int entryindex{0};
+        auto bufferstart = &readinto[0];
+        char *value;
+        uint32_t data_length;
 
-        std::cout << " atts returned " << numatts << std::endl;
+
+        // loop through each returned bulkattrlist item
+        for (entryindex = 0; entryindex < numatts; entryindex++) {
+            std::cout << "entry    " << entryindex << std::endl;
+
+            // Read entry length safely
+            // need to use this to calculate ref pointer later
+            std::memcpy(&data_length, bufferstart, sizeof(uint32_t));
+            std::cout << "entry len = " << data_length << " byte\n" << std::endl;;
+
+
+            // map struct to returned bytes
+            auto* buff_entry = reinterpret_cast<raw_bytes_returned*>(bufferstart);
+            char* name_pointer = reinterpret_cast<char*>(&buff_entry->name_ref) +
+                buff_entry->name_ref.attr_dataoffset;
+            std::string filename(name_pointer, buff_entry->name_ref.attr_length);
+
+            std::cout << "#  " <<
+                entryindex << "entry_name (file name)" << filename << "\n";
+            std::cout << " entry_len: " <<
+                buff_entry->length << " bytes\n";
+            std::cout << " inode (file_id): " <<
+                buff_entry->file_id << std::endl;
+            std::cout << " permissions: " << std::oct <<
+                buff_entry->permissions << std::dec << "\n" << std::endl;
+            std::cout << " owner_id: " <<
+                buff_entry->owner_id << std::endl;
+            std::cout << " document_id: "
+            << buff_entry->document_id << "\n" << std::endl;
+            std::cout << " tv_sec: " <<
+                buff_entry->crtime.tv_sec << "\n" << std::endl;
+
+            char* ref_ptr = bufferstart + 24;
+
+            attrreference_t name_ref;
+            std::memcpy(&name_ref, ref_ptr, sizeof(attrreference_t));
+
+            std::cout << "DEBUG Name Ref: Offset = " << name_ref.attr_dataoffset
+                      << "Length = " << name_ref.attr_length << std::endl;
+
+            // name string in relation to the ref variable
+            char* name_string_ptr = ref_ptr + name_ref.attr_dataoffset;
+
+            // 4. Safely extract and print the filename
+            std::string safe_name(name_string_ptr, name_ref.attr_length);
+
+            // remove null or empty bytes
+            if (!safe_name.empty() && safe_name.back() == '\0') {
+                safe_name.pop_back();
+            }
+
+            std::cout << "Parsed Filename: " << safe_name << std::endl;
+
+            // -----DEBUG END-------
+            // ---------------------
+            // ----------------- Shift pointer tonext entry block -----------------
+
+            bufferstart += data_length;
+
+
+            // std::memcpy(&data_length, value, sizeof(data_length));
+            //
+            // returned_raw_attributes returned_values;
+            //
+            // returned_values.length = data_length;
+            //
+            // std::memcpy(&returned_values.attributes, value, sizeof(attribute_set_t));
+
+            // std::cout << " test 1 " << returned_values.name << std::endl;
+            // std::cout << " test 2 " << data_length << std::endl;
+
+        }
 
         /*
-         recursively crawl and write structs
+         recursively crawl and write structs - OLD
          */
 
         // DIR* starting_directory_pointer = opendir(starting_path);
@@ -111,11 +192,6 @@ namespace crawl {
         //     std::cout << lst->d_ino  << std::endl;
         //
         // }
-
-
-
-
-
 
 
 
@@ -139,13 +215,6 @@ namespace crawl {
 
             std::cout << filesystem::canonical(entry.path()).string() << "\n";
             std::cout << filesystem::file_size(entry) / (1024.f * 1024.f) << " MB"  << "\n";
-
-
-
-
-
-
-
 
 
             // compiler trick, simpler
@@ -182,7 +251,7 @@ int main() {
     // // std::filesystem::directory_entry starting(std::getenv("HOME"));
     // std::cout << starting.path() << std::endl;
 
-    crawl::crawl_filesystem("/Users/arielwhittingham/Downloads/demo/");
+    crawl::crawl_filesystem("/Users/arielwhittingham/Downloads/");
 
     // std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
     //
