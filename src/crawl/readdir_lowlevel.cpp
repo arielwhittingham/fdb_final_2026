@@ -3,6 +3,7 @@
 #include <iostream>
 #include <sys/errno.h>
 #include <sys/vnode.h>
+#include <sys/_types/_guid_t.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <stdio.h>
@@ -11,25 +12,26 @@
 #include "../schema/schema_objects.h"
 
 namespace crawl {
-
-
     using namespace schema;
 
 
     struct raw_bytes_returned {
-        uint32_t length;                // size of this file's chunk
-        attribute_set_t returned_attrs; // ATTR_CMN_RETURNED_ATTRS reference to all the attributes that get returned
-        attrreference_t name_ref;       // pointer to length of string names
-        mode_t permissions;             //  ATTR_CMN_ACCESSMASK
-        timespec crtime;                // ATTR_CMN_CRTIME
-        uint32_t document_id;           // From ATTR_CMN_DOCUMENT_ID
-        uint32_t file_id;              // From ATTR_CMN_FILEID (u_int64_t)
-        uint32_t parent_id;            // From ATTR_CMN_PARENTID(u_int64_t)
-        uid_t owner_id;                 // From ATTR_CMN_OWNERID
-        off_t total_size;               // off_t
-        u_int32_t access_mask;          //
+        // header
+        uint32_t length;                // 4 bytes
+        attribute_set_t returned_attrs; // 4 bytes
 
-    } __attribute__((aligned(4)));     // alighnment rule
+        // atts
+        attrreference_t name_ref;       // 8 bytes
+        uint32_t permissions;           // +4 bytes internally
+        // uint32_t document_id;    // remove for now
+        struct timespec crtime;         // 16 bytes (Lands cleanly on byte 24)
+        uint64_t file_id;               // 8 bytes --Lands cleanly on byte 48
+        uint64_t parent_id;             // 8 bytes
+        //file meta
+        off_t total_size;               // 8 bytes
+        uint32_t file_type;             // 4 bytes
+
+    }; // no alignment rule
 
     // print out raw bytes in HEX
     void hexDump(const void* address, int len) {
@@ -60,29 +62,33 @@ namespace crawl {
     // void crawl_filesystem(const std::string&  starting_path) {
     void crawl_filesystem(const char  *starting_path) {
 
-        struct ::attrlist attributes;
+        attrlist attributes;
         //buffer
         char readinto[1024 * 64];
         memset(&attributes, 0, sizeof(attributes));
 
+        // https://github.com/apple-oss-distributions/xnu/blob/main/bsd/man/man2/getattrlist.2
+        // ATTR list from apple^^
 
-        // file metadata categories
+        // attr.h structs: https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/attr.h
+
+        // file metadata categories that are filled
         attributes.bitmapcount = ATTR_BIT_MAP_COUNT;
 
         // common attributes for all files and dirs
-        attributes.commonattr = ATTR_CMN_NAME | ATTR_CMN_RETURNED_ATTRS  //name
-        | ATTR_CMN_ACCESSMASK //perm
-        | ATTR_CMN_CRTIME //created
-        | ATTR_CMN_DOCUMENT_ID //persistent doc id
-        | ATTR_CMN_FILEID //File ID u_int64_t
-        | ATTR_CMN_PARENTID // parent file id
-        | ATTR_CMN_OWNERID //not sure
-        | ATTR_CMN_ACCESSMASK // mode maybe?
-        ;
+        // needs to align with the struct above?
+        attributes.commonattr =
+              ATTR_CMN_RETURNED_ATTRS
+            | ATTR_CMN_NAME
+            | ATTR_CMN_OBJTYPE
+            | ATTR_CMN_CRTIME
+            | ATTR_CMN_ACCESSMASK
+            // | ATTR_CMN_DOCUMENT_ID
+            | ATTR_CMN_FILEID
+            | ATTR_CMN_PARENTID;
 
-        //other
-        attributes.fileattr = ATTR_FILE_TOTALSIZE | ATTR_FILE_FILETYPE ; // 2
-
+        attributes.fileattr =
+              ATTR_FILE_TOTALSIZE;
         // make sure starting path can open properly with the correct features
         int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY,0);
 
@@ -105,61 +111,136 @@ namespace crawl {
 
         // loop through each returned bulkattrlist item
         for (entryindex = 0; entryindex < numatts; entryindex++) {
-            std::cout << "entry    " << entryindex << std::endl;
 
-            // Read entry length safely
-            // need to use this to calculate ref pointer later
-            std::memcpy(&data_length, bufferstart, sizeof(uint32_t));
-            std::cout << "entry len = " << data_length << " byte\n" << std::endl;;
+            // entry length
+            char* cur = bufferstart;
+            std::memcpy(&data_length, cur, sizeof(data_length));
+            cur += sizeof(data_length);
+
+            // returned attributes
+            attribute_set_t returned_attrs{};
+            std::memcpy( &returned_attrs, cur,sizeof(returned_attrs));
+            cur += sizeof(returned_attrs);
+
+            // ATTR_CMN_NAME
+
+            std::string filename;
+
+            if (returned_attrs.commonattr & ATTR_CMN_NAME) {
+                char* ref_location = cur;
+                attrreference_t name_ref{};
+                std::memcpy( &name_ref, cur, sizeof(name_ref));
+
+                cur += sizeof(name_ref);
+                char* name_pointer = ref_location + name_ref.attr_dataoffset;
+                filename.assign(name_pointer,name_ref.attr_length);
+
+                // remove null terminator
+                if (!filename.empty() && filename.back() == '\0') {
+                    filename.pop_back();
+                }
+            }
+            // ATTR_CMN_OBJTYPE
 
 
-            // map struct to returned bytes
-            auto* buff_entry = reinterpret_cast<raw_bytes_returned*>(bufferstart);
-            char* name_pointer = reinterpret_cast<char*>(&buff_entry->name_ref) +
-                buff_entry->name_ref.attr_dataoffset;
-            std::string filename(name_pointer, buff_entry->name_ref.attr_length);
+            fsobj_type_t object_type = 0;
 
-            std::cout << "#  " <<
-                entryindex << "\n\n  entry_name (file name): " << filename << "\n";
-            std::cout << " entry_len: " <<
-                buff_entry->length << " bytes\n";
-            std::cout << " inode (file_id): " <<
-                buff_entry->file_id << std::endl;
-            std::cout << " permissions: " << std::oct <<
-                buff_entry->permissions << std::dec << "\n" << std::endl;
-            std::cout << " owner_id: " <<
-                buff_entry->owner_id << std::endl;
-            std::cout << " document_id: "
-            << buff_entry->document_id << "\n" << std::endl;
-            std::cout << " tv_sec: " <<
-                buff_entry->crtime.tv_sec << "\n" << std::endl;
-            // std::cout << " access_mask: " <<
-            //     buff_entry->access_mask  << "\n" << std::endl;
-            // std::cout << " parent_id: " <<
-            //     buff_entry->parent_id << "\n" << std::endl;
-            // std::cout << " total_size: " <<
-            //     buff_entry->total_size << "\n" << std::endl;
+            if (returned_attrs.commonattr & ATTR_CMN_OBJTYPE) {
 
-            char* ref_ptr = bufferstart + 24;
-
-            attrreference_t name_ref;
-            std::memcpy(&name_ref, ref_ptr, sizeof(attrreference_t));
-
-            std::cout << "DEBUG Name Ref: Offset = " << name_ref.attr_dataoffset
-                      << "Length = " << name_ref.attr_length << std::endl;
-
-            // name string in relation to the ref variable
-            char* name_string_ptr = ref_ptr + name_ref.attr_dataoffset;
-
-            // 4. Safely extract and print the filename
-            std::string safe_name(name_string_ptr, name_ref.attr_length);
-
-            // remove null or empty bytes
-            if (!safe_name.empty() && safe_name.back() == '\0') {
-                safe_name.pop_back();
+                std::memcpy(&object_type, cur,sizeof(object_type));
+                cur += sizeof(object_type);
             }
 
-            std::cout << "Parsed Filename: " << safe_name << std::endl;
+            // ATTR_CMN_CRTIME -- struct not just a single valu
+
+
+            timespec crtime{};
+
+            if (returned_attrs.commonattr & ATTR_CMN_CRTIME) {
+
+                std::memcpy(&crtime,cur,sizeof(crtime)
+                );
+
+                cur += sizeof(crtime);
+            }
+
+            // ATTR_CMN_ACCESSMASK
+
+            uint32_t permissions = 0;
+            if (returned_attrs.commonattr & ATTR_CMN_ACCESSMASK) {
+                std::memcpy(&permissions,cur,sizeof(permissions));
+                cur += sizeof(permissions);
+            }
+
+            // remove document_id foor now
+            // uint32_t document_id = 0;
+            //
+            // if (returned_attrs.commonattr & ATTR_CMN_DOCUMENT_ID) {
+            //     std::memcpy(&document_id,cur,sizeof(document_id)
+            //     );
+            //
+            //     cur += sizeof(document_id);
+            // }
+
+
+            // this is the inode
+            // ATTR_CMN_FILEID
+
+            uint64_t file_id = 0;
+            if (returned_attrs.commonattr & ATTR_CMN_FILEID) {
+
+                std::memcpy(
+                    &file_id,
+                    cur,
+                    sizeof(file_id)
+                );
+
+                cur += sizeof(file_id);
+            }
+
+
+            // ---------------------------------
+            // ATTR_CMN_PARENTID
+            // ---------------------------------
+
+            uint64_t parent_id = 0;
+
+            if (returned_attrs.commonattr & ATTR_CMN_PARENTID) {
+                std::memcpy( &parent_id, cur,sizeof(parent_id)
+                );
+                cur += sizeof(parent_id);
+            }
+
+
+            // ---------------------------------
+            // ATTR_FILE_TOTALSIZE
+            // ---------------------------------
+
+            off_t total_size = 0;
+
+            if (returned_attrs.fileattr & ATTR_FILE_TOTALSIZE) {
+
+                std::memcpy(
+                    &total_size,
+                    cur,
+                    sizeof(total_size)
+                );
+
+                cur += sizeof(total_size);
+            }
+
+
+            std::cout << "  file: " << filename << std::endl;
+            std::cout << "  file: " << file_id << std::endl;
+            std::cout << "  size bytes " <<total_size << std::endl;
+            std::cout << " perms  " <<permissions << std::endl;
+            // std::cout << " doc_id  " <<document_id << std::endl;
+
+            std::cout << " parent_inode  " <<parent_id << std::endl;
+            std::cout <<  "  seconds " <<crtime.tv_sec<< std::endl;
+            std::cout << "  objtype " <<object_type << std::endl;
+
+
 
             // -----DEBUG END-------
             // ---------------------
@@ -198,58 +279,14 @@ namespace crawl {
         //     std::cout << lst->d_namlen  << std::endl;
         //     // std::cout << lst->d_type  << std::endl;
         //     std::cout << lst->d_ino  << std::endl;
-        //
-        // }
-
-
 
         /*
-        // void write_string_view_char_array(char* target_char_array,std::size_t array_size, std::string_view input_string)
-
-            schema::FileRecord raw_record;
-
-            // string parameters
-            write_string_view_char_array(raw_record.full_path.data(),raw_record.full_path.size(), entry.path().string());
-            write_string_view_char_array(raw_record.file_name.data(),raw_record.file_name.size(), entry.path().string());
-            write_string_view_char_array(raw_record.type.data(),raw_record.type.size(), entry.path().string());
-            write_string_view_char_array(raw_record.permissions.data(),raw_record.permissions.size(), entry.path().string());
-
-            // numeric parameters
-
-                std::uint64_t size_bytes = ,
-                std::uint16_t mode = ,
-                std::uint64_t inode = ,
-            };
-
-            std::cout << filesystem::canonical(entry.path()).string() << "\n";
-            std::cout << filesystem::file_size(entry) / (1024.f * 1024.f) << " MB"  << "\n";
-
-
-            // compiler trick, simpler
-            // static_assert(sizeof(decltype(filesystem::canonical(entry.path()))) == 0, "Check type here");
-
-            ++counter;
+          parse file returned to get usefull metadata
         */
-        }
-        // auto endtime = std::chrono::high_resolution_clock::now();
-        // std::chrono::duration<double, std::milli> ft =  endtime - starttime;
-
-    //     std::cout << counter
-    //               << "<- items  Seconds -> "
-    //               << ft.count() / 1000.f
-    //               << " for dirctory -> "
-    //               << filesystem::canonical(starting_path).string()
-    //               << "\n";
-    //
-    //
-    // }
-
-    /*
-      parse file returned to get usefull metadata
-    */
 
 
 
+    }
 }
 
 int main() {
@@ -259,7 +296,7 @@ int main() {
     // // std::filesystem::directory_entry starting(std::getenv("HOME"));
     // std::cout << starting.path() << std::endl;
 
-    crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_test");
+    crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_test/nested");
 
     // std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
     //
@@ -269,7 +306,6 @@ int main() {
     // random_record->file_name = "Ariel";
     //
     // std::cout << random_record->file_name << "\n";
-
 
 
 
