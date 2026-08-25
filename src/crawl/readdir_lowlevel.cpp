@@ -25,7 +25,7 @@ namespace crawl {
         uint32_t permissions;           // +4 bytes internally
         // uint32_t document_id;    // remove for now
         struct timespec crtime;         // 16 bytes (Lands cleanly on byte 24)
-        uint64_t file_id;               // 8 bytes --Lands cleanly on byte 48
+        uint64_t file_id;               // 8 bytes //Lands cleanly on byte 48
         uint64_t parent_id;             // 8 bytes
         //file meta
         off_t total_size;               // 8 bytes
@@ -101,7 +101,9 @@ namespace crawl {
 
         uint64_t options = 0;
         // need to mov this inside a later while-loop
-        int numatts = getattrlistbulk(open_status, &attributes, &readinto[0], sizeof(readinto), options);
+        while (int numatts = getattrlistbulk(open_status, &attributes, &readinto[0], sizeof(readinto), options) > 0) {
+
+
 
         int entryindex{0};
         auto bufferstart = &readinto[0];
@@ -229,7 +231,9 @@ namespace crawl {
                 cur += sizeof(total_size);
             }
 
-
+            std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
+            std::cout << "num atts: " << numatts<< "\n";
+            std::cout << "  file size: " << sizeof(filename) << std::endl;
             std::cout << "  file: " << filename << std::endl;
             std::cout << "  file: " << file_id << std::endl;
             std::cout << "  size bytes " <<total_size << std::endl;
@@ -249,6 +253,7 @@ namespace crawl {
             bufferstart += data_length;
 
 
+
             // std::memcpy(&data_length, value, sizeof(data_length));
             //
             // returned_raw_attributes returned_values;
@@ -261,7 +266,7 @@ namespace crawl {
             // std::cout << " test 2 " << data_length << std::endl;
 
         }
-
+        }
         /*
          recursively crawl and write structs - OLD
          */
@@ -296,7 +301,7 @@ int main() {
     // // std::filesystem::directory_entry starting(std::getenv("HOME"));
     // std::cout << starting.path() << std::endl;
 
-    crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_test/nested");
+    crawl::crawl_filesystem("/Users/arielwhittingham/");
 
     // std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
     //
