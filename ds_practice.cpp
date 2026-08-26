@@ -42,7 +42,7 @@ int main() {
 
     auto indval = std::lower_bound(ff.begin(),ff.end(),tester);
     auto ind = std::distance(ff.begin(), indval);
-    std::cout << "index of " << tester << " = " << ind << "\n";
+    std::cout << "sindex of " << tester << " = " << ind << "\n";
     ff.insert(indval,tester);
 
     for (auto& c : ff) {
