@@ -7,7 +7,6 @@
 #include <algorithm>
 
 namespace indexer {
-
     extern const int SORTED_KEYS_LENGTH = 5;
     /*
 
@@ -37,16 +36,41 @@ namespace indexer {
     */
 
 
+    template<typename T, std::size_t N>
+    bool element_exists(uint32_t search_value, std::array<T, N> &search_array) {
+        uint32_t return_index = 0;
+        for (const auto &item: search_array) {
+            if (item == search_value) {
+                return true;
+            }
+            return_index++;
+        }
+        return false;
+    }
 
-    uint32_t get_array_index(uint32_t search_value, const std::array<uint32_t, SORTED_KEYS_LENGTH> &keys) {
-        return 1;
 
+    // return correct index of array to put it in sorted
+    // only if it doesn't already exist
+    template<std::size_t N>
+    uint32_t get_array_index(uint32_t search_value, const std::array<uint32_t, N> &keys) {
+        if constexpr (N == 0) {
+            return 0;
+        } else if constexpr (N == 1) {
+            if (keys[0] > search_value) {
+                // This now works perfectly
+                return 1;
+            } else {
+                return 0;
+            }
+        } else {
+            std::cout << " search_value test: " << search_value << "\n";
 
-
+            return 0;
+        }
     }
 }
-int main() {
 
+int main() {
     // logic for inserting into a vector and maintaining sorted order
     std::vector<int> ff{4};
     // std::array< int32_t, 5>
@@ -56,24 +80,21 @@ int main() {
     std::cout << ff[3] << "\n";
     int tester{5};
 
-    std::array<uint32_t, 5> test{1,2,3,4,5};
+    std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
 
     int d = indexer::get_array_index(2, test);
 
     std::cout << d << std::endl;
 
 
-
-
-    auto indval = std::lower_bound(ff.begin(),ff.end(),tester);
+    auto indval = std::lower_bound(ff.begin(), ff.end(), tester);
     auto ind = std::distance(ff.begin(), indval);
     std::cout << "sindex of " << tester << " = " << ind << "\n";
-    ff.insert(indval,tester);
+    ff.insert(indval, tester);
 
-    for (auto& c : ff) {
+    for (auto &c: ff) {
         std::cout << c << "\n";
     }
 
     return 0;
-
 }
