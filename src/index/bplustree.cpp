@@ -2,8 +2,10 @@
 #include "iostream"
 #include "array"
 #include "vector"
+#inluude "schema_objects.h"
 #include <string>
 #include <cstdint>
+
 #include <algorithm>
 
 namespace indexer {
@@ -36,8 +38,8 @@ namespace indexer {
     */
 
 
-    template<typename T, std::size_t N>
-    bool element_exists(uint32_t search_value, std::array<T, N> &search_array) {
+    template<std::size_t N>
+    bool element_exists(uint32_t search_value, std::array<uint32_t, N> &search_array) {
         uint32_t return_index = 0;
         for (const auto &item: search_array) {
             if (item == search_value) {
@@ -52,7 +54,7 @@ namespace indexer {
     // return correct index of array to put it in sorted
     // only if it doesn't already exist
     template<std::size_t N>
-    uint32_t get_array_index(uint32_t search_value, const std::array<uint32_t, N> &keys) {
+    uint32_t get_array_index_without_checking_exists(uint32_t search_value, const std::array<uint32_t, N> &keys) {
         if constexpr (N == 0) {
             return 0;
         } else if constexpr (N == 1) {
@@ -63,11 +65,27 @@ namespace indexer {
                 return 0;
             }
         } else {
+            auto index_iterator = std::lower_bound(keys.begin(), keys.end(), search_value);
+
+            auto index_value = std::distance(keys.begin(), index_iterator);
+
             std::cout << " search_value test: " << search_value << "\n";
 
-            return 0;
+            return index_value;
         }
     }
+
+    class BPlusTreeNode {
+
+        bool leaf_node;
+        uint16_t keys_in_node;
+        uint32_t next_node_id;
+
+
+        uint32_t
+
+    };
+
 }
 
 int main() {
@@ -82,7 +100,12 @@ int main() {
 
     std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
 
-    int d = indexer::get_array_index(2, test);
+    int a  = indexer::element_exists(4,test);
+    int d = indexer::get_array_index_without_checking_exists(4, test);
+    std::cout << "exists: " << a <<"index: " << d << "\n";
+
+
+    /*
 
     std::cout << d << std::endl;
 
@@ -97,4 +120,5 @@ int main() {
     }
 
     return 0;
+    */
 }
