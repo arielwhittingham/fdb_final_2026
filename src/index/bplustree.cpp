@@ -8,6 +8,8 @@
 
 #include <algorithm>
 
+#include "../schema/schema_objects.h"
+
 namespace indexer {
     extern const int SORTED_KEYS_LENGTH = 5;
     /*
@@ -74,15 +76,39 @@ namespace indexer {
             return index_value;
         }
     }
+/*
+    std::array<char, 1024> full_path;// need to get this reursively
+    std::array<char, 255> file_name;
+    std::array<char, 20> type;
+    std::uint64_t size_bytes; // off_t
+    std::uint16_t mode; // access_mask..?
+    std::array<char, 20> permissions; //permissions
+    std::uint64_t inode; // file_id
+    std::uint64_t parent_id; // parent_id
+    std::uint32_t uid; //document_id
+    std::uint64_t created_timestamp; // crtime
+    std::uint32_t size=0; //record size total - need to calculate; //,aybe length?
+*/
 
     class BPlusTreeNode {
-
+    public:
         bool leaf_node;
-        uint16_t keys_in_node;
+        size_t actual_keys_in_node;
         uint32_t next_node_id;
+        std::array<uint32_t, SORTED_KEYS_LENGTH> keys;
+        std::array<schema::FileRecord, SORTED_KEYS_LENGTH + 1> full_data;
+
+        BPlusTreeNode() { // constructor
+            std::cout << "this is the B+ tree constructor\n";
+        }
+        void add_object() {
 
 
-        uint32_t
+        }
+
+
+
+
 
     };
 
