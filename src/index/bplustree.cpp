@@ -2,16 +2,14 @@
 #include "iostream"
 #include "array"
 #include "vector"
-#inluude "schema_objects.h"
+#include "../schema/schema_objects.h"
 #include <string>
 #include <cstdint>
-
 #include <algorithm>
 
-#include "../schema/schema_objects.h"
 
 namespace indexer {
-    extern const int SORTED_KEYS_LENGTH = 5;
+    extern const int RECORDS_PER_PAGE = 10;
     /*
 
     💡 Core ConceptThink of std::lower_bound as finding the earliest position where
@@ -76,42 +74,29 @@ namespace indexer {
             return index_value;
         }
     }
-/*
-    std::array<char, 1024> full_path;// need to get this reursively
-    std::array<char, 255> file_name;
-    std::array<char, 20> type;
-    std::uint64_t size_bytes; // off_t
-    std::uint16_t mode; // access_mask..?
-    std::array<char, 20> permissions; //permissions
-    std::uint64_t inode; // file_id
-    std::uint64_t parent_id; // parent_id
-    std::uint32_t uid; //document_id
-    std::uint64_t created_timestamp; // crtime
-    std::uint32_t size=0; //record size total - need to calculate; //,aybe length?
-*/
 
-    class BPlusTreeNode {
-    public:
-        bool leaf_node;
-        size_t actual_keys_in_node;
-        uint32_t next_node_id;
-        std::array<uint32_t, SORTED_KEYS_LENGTH> keys;
-        std::array<schema::FileRecord, SORTED_KEYS_LENGTH + 1> full_data;
-
-        BPlusTreeNode() { // constructor
-            std::cout << "this is the B+ tree constructor\n";
-        }
-        void add_object() {
+    /*
 
 
-        }
+    */
 
-
-
-
-
+    struct PageHead {
+        uint32_t page_number;
+        uint8_t type; // leaf or internal
+        uint16_t item_count;
+        uint32_t parent_page_number;
     };
 
+    struct BPlusTreeNode {
+        PageHead header;
+        uint32_t next_leaf_id;
+        schema::FileRecord records[RECORDS_PER_PAGE];
+
+        BPlusTreeNode() {
+            // constructor
+            std::cout << "this is the B+ tree constructor\n";
+        }
+    };
 }
 
 int main() {
@@ -126,10 +111,41 @@ int main() {
 
     std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
 
-    int a  = indexer::element_exists(4,test);
+    int a = indexer::element_exists(4, test);
     int d = indexer::get_array_index_without_checking_exists(4, test);
-    std::cout << "exists: " << a <<"index: " << d << "\n";
+    std::cout << "exists: " << a << "index: " << d << "\n";
 
+    struct FileRecord {
+        std::uint64_t inode; // file_id
+        std::uint64_t parent_inode; // parent_id
+        std::uint64_t created_timestamp; // crtime
+        std::uint64_t size_bytes; // off_t
+        std::uint16_t mode; // access_mask..?
+        std::array<char, 20> type; //make this into an enum
+        std::array<char, 255> file_name; // keeping last to align memory efficiently
+    };
+    schema::FileRecord testrecord_1 {
+        .inode = 1,
+        .parent_inode = 5,
+        .created_timestamp = 12345,
+        .size_bytes = 4,
+        .mode =  321,
+        .type{"txt"},
+        .file_name = {"file_1.txt"}
+    };
+
+    schema::FileRecord testrecord_2 {
+        .inode = 2,
+        .parent_inode = 1,
+        .created_timestamp = 548722,
+        .size_bytes = 8,
+        .mode =  322,
+        .type{"sql"},
+        .file_name = {"query_file.sql"}
+    };
+
+    std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
+    std::cout << "\n TEST RECORD 2: \n" << testrecord_2.to_string() << "\n";
 
     /*
 
