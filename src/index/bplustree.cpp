@@ -10,6 +10,10 @@
 
 namespace indexer {
     extern const int RECORDS_PER_PAGE = 10;
+    using page_id_type = std::uint32_t;
+
+    // this is a sentinel commonly used to represent and invalid ID
+    uint32_t invalid_page_id = UINT32_MAX;
     /*
 
     💡 Core ConceptThink of std::lower_bound as finding the earliest position where
@@ -59,7 +63,6 @@ namespace indexer {
             return 0;
         } else if constexpr (N == 1) {
             if (keys[0] > search_value) {
-                // This now works perfectly
                 return 1;
             } else {
                 return 0;
@@ -75,10 +78,11 @@ namespace indexer {
         }
     }
 
-    /*
+    struct TreeRootHeader {
+        uint32_t root_id;
+        uint32_t node_count;
+    };
 
-
-    */
 
     struct PageHead {
         uint32_t page_number;
@@ -96,6 +100,61 @@ namespace indexer {
             // constructor
             std::cout << "this is the B+ tree constructor\n";
         }
+    };
+
+    /*
+
+    */
+    class BPlusTreeManager {
+
+
+        public:
+
+        const std::string &starting_directory;
+        TreeRootHeader root_header;
+        BPlusTreeNode root_node;
+
+
+        /*
+          costructor below
+        */
+        BPlusTreeManager(const std::string &starting_dir_param)
+
+            // colon is the separator of variables before any constructor logic
+            : starting_directory{starting_dir_param},
+            root_header{0, 1}
+            {
+
+            root_node.header.type = 1; //leaf
+            root_node.header.page_number = 0; //first node
+            root_node.header.item_count= 0;
+            root_node.header.parent_page_number = invalid_page_id; // invlaid noparent for root
+            root_node.next_leaf_id = invalid_page_id; // invlaid no next leaf
+            }
+
+        uint32_t create_new_page_id() {
+            uint32_t new_page_id = root_header.node_count;
+            root_header.node_count++;
+            return new_page_id;
+        }
+
+        void add_record(const schema::FileRecord &record) {
+            /// first condition the empty tree has no
+            /// records in it yet
+            if (root_node.header.item_count == 0)
+                {
+                root_node.records[0] = record;
+                root_node.header.item_count++;
+
+                }
+            else {
+                std::cout << " rest of logic for adding a new record to a non-empty tree. The"
+                             "above code basically is just to initialize a tree with noting in it, and add "
+                             "the very first record " << "\n";
+            }
+        }
+
+
     };
 }
 
@@ -115,15 +174,8 @@ int main() {
     int d = indexer::get_array_index_without_checking_exists(4, test);
     std::cout << "exists: " << a << "index: " << d << "\n";
 
-    struct FileRecord {
-        std::uint64_t inode; // file_id
-        std::uint64_t parent_inode; // parent_id
-        std::uint64_t created_timestamp; // crtime
-        std::uint64_t size_bytes; // off_t
-        std::uint16_t mode; // access_mask..?
-        std::array<char, 20> type; //make this into an enum
-        std::array<char, 255> file_name; // keeping last to align memory efficiently
-    };
+
+
     schema::FileRecord testrecord_1 {
         .inode = 1,
         .parent_inode = 5,
@@ -143,6 +195,11 @@ int main() {
         .type{"sql"},
         .file_name = {"query_file.sql"}
     };
+
+
+
+    indexer::BPlusTreeManager testtree{"test_dir"};
+    testtree.add_record(testrecord_1);
 
     std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
     std::cout << "\n TEST RECORD 2: \n" << testrecord_2.to_string() << "\n";

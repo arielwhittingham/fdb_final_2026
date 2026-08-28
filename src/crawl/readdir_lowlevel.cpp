@@ -121,41 +121,40 @@ namespace crawl {
                 // loop through each returned bulkattrlist item
                 for (entryindex = 0; entryindex < numatts; entryindex++) {
                     // entry length
-                    char *cur = bufferstart;
-                    std::memcpy(&data_length, cur, sizeof(data_length));
-                    cur += sizeof(data_length);
+                    char *cursor = bufferstart;
+                    std::memcpy(&data_length, cursor, sizeof(data_length));
+                    cursor += sizeof(data_length);
 
                     // returned attributes
                     attribute_set_t returned_attrs{};
-                    std::memcpy(&returned_attrs, cur, sizeof(returned_attrs));
-                    cur += sizeof(returned_attrs);
+                    std::memcpy(&returned_attrs, cursor, sizeof(returned_attrs));
+                    cursor += sizeof(returned_attrs);
 
-                    // ATTR_CMN_NAME
+                    // ATTR_CMN_NAME -- this is the file name and its variable
 
                     std::string filename;
 
                     if (returned_attrs.commonattr & ATTR_CMN_NAME) {
-                        char *ref_location = cur;
+                        char *ref_location = cursor;
                         attrreference_t name_ref{};
-                        std::memcpy(&name_ref, cur, sizeof(name_ref));
+                        std::memcpy(&name_ref, cursor, sizeof(name_ref));
 
-                        cur += sizeof(name_ref);
+                        cursor += sizeof(name_ref);
                         char *name_pointer = ref_location + name_ref.attr_dataoffset;
                         filename.assign(name_pointer, name_ref.attr_length);
 
-                        // remove null terminator
+                        // remove null at the end o the file name
                         if (!filename.empty() && filename.back() == '\0') {
                             filename.pop_back();
                         }
                     }
-                    // ATTR_CMN_OBJTYPE
 
 
                     fsobj_type_t object_type = 0;
 
                     if (returned_attrs.commonattr & ATTR_CMN_OBJTYPE) {
-                        std::memcpy(&object_type, cur, sizeof(object_type));
-                        cur += sizeof(object_type);
+                        std::memcpy(&object_type, cursor, sizeof(object_type));
+                        cursor += sizeof(object_type);
                     }
 
                     // ATTR_CMN_CRTIME -- struct not just a single valu
@@ -164,18 +163,17 @@ namespace crawl {
                     timespec crtime{};
 
                     if (returned_attrs.commonattr & ATTR_CMN_CRTIME) {
-                        std::memcpy(&crtime, cur, sizeof(crtime)
+                        std::memcpy(&crtime, cursor, sizeof(crtime)
                         );
 
-                        cur += sizeof(crtime);
+                        cursor += sizeof(crtime);
                     }
 
-                    // ATTR_CMN_ACCESSMASK
 
                     uint32_t permissions = 0;
                     if (returned_attrs.commonattr & ATTR_CMN_ACCESSMASK) {
-                        std::memcpy(&permissions, cur, sizeof(permissions));
-                        cur += sizeof(permissions);
+                        std::memcpy(&permissions, cursor, sizeof(permissions));
+                        cursor += sizeof(permissions);
                     }
 
                     // remove document_id foor now
@@ -196,41 +194,32 @@ namespace crawl {
                     if (returned_attrs.commonattr & ATTR_CMN_FILEID) {
                         std::memcpy(
                             &file_id,
-                            cur,
+                            cursor,
                             sizeof(file_id)
                         );
 
-                        cur += sizeof(file_id);
+                        cursor += sizeof(file_id);
                     }
-
-
-                    // ---------------------------------
-                    // ATTR_CMN_PARENTID
-                    // ---------------------------------
 
                     uint64_t parent_id = 0;
 
                     if (returned_attrs.commonattr & ATTR_CMN_PARENTID) {
-                        std::memcpy(&parent_id, cur, sizeof(parent_id)
+                        std::memcpy(&parent_id, cursor, sizeof(parent_id)
                         );
-                        cur += sizeof(parent_id);
+                        cursor += sizeof(parent_id);
                     }
 
-
-                    // ---------------------------------
-                    // ATTR_FILE_TOTALSIZE
-                    // ---------------------------------
 
                     off_t total_size = 0;
 
                     if (returned_attrs.fileattr & ATTR_FILE_TOTALSIZE) {
                         std::memcpy(
                             &total_size,
-                            cur,
+                            cursor,
                             sizeof(total_size)
                         );
 
-                        cur += sizeof(total_size);
+                        cursor += sizeof(total_size);
                     }
 
                     std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
@@ -273,6 +262,8 @@ namespace crawl {
     }
 }
 
+/*             commenting out the main sybol innce i ahev one in another fiel for testing
+
     int main() {
         // std::filesystem::directory_entry starting("/Users/arielwhittingham/Downloads/demo/"); //test di
         // // std::filesystem::directory_entry starting(std::getenv("HOME"));
@@ -289,3 +280,7 @@ namespace crawl {
         //
         // std::cout << random_record->file_name << "\n";
     }
+
+
+    */
+

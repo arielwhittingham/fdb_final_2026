@@ -7,8 +7,8 @@
 
 namespace schema {
     struct FileRecord {
-        std::uint64_t inode; // file_id
-        std::uint64_t parent_inode; // parent_id
+        std::uint64_t inode;
+        std::uint64_t parent_inode;
         std::uint64_t created_timestamp; // crtime
         std::uint64_t size_bytes; // off_t
         std::uint16_t mode; // access_mask..?
@@ -28,14 +28,4 @@ namespace schema {
         }
     };
 
-    // FileRecord(
-    // std::uint64_t inode,
-    // std::uint64_t parent_inode,
-    // std::uint64_t created_timestamp,
-    // std::uint64_t size_bytes,
-    // std::uint16_t mode,
-    // std::array<char, 20> type,
-    // std::array<char, 255> file_name) {
-    //
-    // }
 }
