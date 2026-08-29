@@ -15,6 +15,7 @@ namespace indexer {
     extern const int PAGE_SIZE_IN_BYTES = 4096;
     using page_id_type = std::uint32_t;
     std::string DB_FILE_LOCATION = "../data/" ;
+    // std::string DB_FILE_NAME = "../data/databasefile.db" ;
     std::string DB_FILE_NAME = "databasefile.db" ;
     namespace fs = std::filesystem;
 
@@ -140,7 +141,10 @@ namespace indexer {
                     return;
                 }
                 // create database file if not exists
-                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+                std::ofstream touch(DB_FILE_NAME, std::ios::binary);
+
+                // open file
+                filestream.open(DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
                 if (filestream.is_open()) {
                     std::cout << "open" << "\n";
                 }
@@ -150,10 +154,11 @@ namespace indexer {
 
                 filestream.close();
             }
-            void write_to_file() {
-                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+            void write_to_file(MemoryPage &page, uint32_t page_id ) {
 
-                filestream << "newline \n";
+                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+                filestream.write( reinterpret_cast<const char*>(&page), sizeof(page) );
+                std::cout << "wrote page #: " << page_id << "\n";
                 filestream.close();
 
             }
@@ -251,12 +256,15 @@ namespace indexer {
             .file_name = {"query_file.sql"}
         };
 
+       indexer::MemoryPage p;
+        p.page_slot = {1,2,3,4,5};
+
 
         indexer::BPlusTreeManager testtree{"test_dir"};
         testtree.add_record(testrecord_1);
 
         indexer::BufferManager bufftest;
-        bufftest.write_to_file();
+        bufftest.write_to_file(p, 1);
 
         std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
         std::cout << "\n TEST RECORD 2: \n" << testrecord_2.to_string() << "\n";
