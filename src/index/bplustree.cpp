@@ -6,11 +6,18 @@
 #include <string>
 #include <cstdint>
 #include <algorithm>
+#include <fstream>
+#include <filesystem>
 
 
 namespace indexer {
     extern const int RECORDS_PER_PAGE = 10;
+    extern const int PAGE_SIZE_IN_BYTES = 4096;
     using page_id_type = std::uint32_t;
+    std::string DB_FILE_LOCATION = "../data/" ;
+    std::string DB_FILE_NAME = "databasefile.db" ;
+    namespace fs = std::filesystem;
+
 
     // this is a sentinel commonly used to represent and invalid ID
     uint32_t invalid_page_id = UINT32_MAX;
@@ -102,122 +109,152 @@ namespace indexer {
         }
     };
 
-    /*
+    //create a structure to store each new page
+    struct MemoryPage {
+        char page_slot[PAGE_SIZE_IN_BYTES];
 
-    */
-    class BPlusTreeManager {
+        MemoryPage() {
+            std::memset(page_slot, 0, PAGE_SIZE_IN_BYTES);
+        }
+    };
 
+        class BufferManager {
 
         public:
+            fs::path dir = DB_FILE_LOCATION;
+            std::fstream filestream;
+            std::vector<MemoryPage> pages;
 
-        const std::string &starting_directory;
-        TreeRootHeader root_header;
-        BPlusTreeNode root_node;
-
-
-        /*
-          costructor below
-        */
-        BPlusTreeManager(const std::string &starting_dir_param)
-
-            // colon is the separator of variables before any constructor logic
-            : starting_directory{starting_dir_param},
-            root_header{0, 1}
-            {
-
-            root_node.header.type = 1; //leaf
-            root_node.header.page_number = 0; //first node
-            root_node.header.item_count= 0;
-            root_node.header.parent_page_number = invalid_page_id; // invlaid noparent for root
-            root_node.next_leaf_id = invalid_page_id; // invlaid no next leaf
-            }
-
-        uint32_t create_new_page_id() {
-            uint32_t new_page_id = root_header.node_count;
-            root_header.node_count++;
-            return new_page_id;
-        }
-
-        void add_record(const schema::FileRecord &record) {
-            /// first condition the empty tree has no
-            /// records in it yet
-            if (root_node.header.item_count == 0)
-                {
-                root_node.records[0] = record;
-                root_node.header.item_count++;
+            BufferManager() {
+                //create dir if not exist
+                try {
+                    fs::create_directory(dir);
+                    fs::permissions(
+                        dir,
+                        fs::perms::owner_all
+                        );
 
                 }
-            else {
-                std::cout << " rest of logic for adding a new record to a non-empty tree. The"
-                             "above code basically is just to initialize a tree with noting in it, and add "
-                             "the very first record " << "\n";
+                catch (fs::filesystem_error& e) {
+                    std::cerr << "filesystem error, can't make directory" << e.what() << std::endl;
+                    return;
+                }
+                // create database file if not exists
+                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+                filestream.close();
             }
-        }
 
 
-    };
-}
+            // std::string &file_name;
 
-int main() {
-    // logic for inserting into a vector and maintaining sorted order
-    std::vector<int> ff{4};
-    // std::array< int32_t, 5>
-    ff.push_back(6);
-    ff.push_back(7);
-    ff.push_back(9);
-    std::cout << ff[3] << "\n";
-    int tester{5};
+        };
 
-    std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
+        /*
 
-    int a = indexer::element_exists(4, test);
-    int d = indexer::get_array_index_without_checking_exists(4, test);
-    std::cout << "exists: " << a << "index: " << d << "\n";
+        */
+        class BPlusTreeManager {
+        public:
+            const std::string &starting_directory;
+            TreeRootHeader root_header;
+            BPlusTreeNode root_node;
 
 
+            /*
+              costructor below
+            */
+            BPlusTreeManager(const std::string &starting_dir_param)
 
-    schema::FileRecord testrecord_1 {
-        .inode = 1,
-        .parent_inode = 5,
-        .created_timestamp = 12345,
-        .size_bytes = 4,
-        .mode =  321,
-        .type{"txt"},
-        .file_name = {"file_1.txt"}
-    };
+            // colon is the separator of variables before any constructor logic
+                : starting_directory{starting_dir_param},
+                  root_header{0, 1} {
+                root_node.header.type = 1; //leaf
+                root_node.header.page_number = 0; //first node
+                root_node.header.item_count = 0;
+                root_node.header.parent_page_number = invalid_page_id; // invlaid noparent for root
+                root_node.next_leaf_id = invalid_page_id; // invlaid no next leaf
+            }
 
-    schema::FileRecord testrecord_2 {
-        .inode = 2,
-        .parent_inode = 1,
-        .created_timestamp = 548722,
-        .size_bytes = 8,
-        .mode =  322,
-        .type{"sql"},
-        .file_name = {"query_file.sql"}
-    };
+            uint32_t create_new_page_id() {
+                uint32_t new_page_id = root_header.node_count;
+                root_header.node_count++;
+                return new_page_id;
+            }
 
-
-
-    indexer::BPlusTreeManager testtree{"test_dir"};
-    testtree.add_record(testrecord_1);
-
-    std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
-    std::cout << "\n TEST RECORD 2: \n" << testrecord_2.to_string() << "\n";
-
-    /*
-
-    std::cout << d << std::endl;
-
-
-    auto indval = std::lower_bound(ff.begin(), ff.end(), tester);
-    auto ind = std::distance(ff.begin(), indval);
-    std::cout << "sindex of " << tester << " = " << ind << "\n";
-    ff.insert(indval, tester);
-
-    for (auto &c: ff) {
-        std::cout << c << "\n";
+            void add_record(const schema::FileRecord &record) {
+                /// first condition the empty tree has no
+                /// records in it yet
+                if (root_node.header.item_count == 0) {
+                    root_node.records[0] = record;
+                    root_node.header.item_count++;
+                } else {
+                    std::cout << " rest of logic for adding a new record to a non-empty tree. The"
+                            "above code basically is just to initialize a tree with noting in it, and add "
+                            "the very first record " << "\n";
+                }
+            }
+        };
     }
 
-    return 0;
-    */
-}
+    int main() {
+        // logic for inserting into a vector and maintaining sorted order
+        std::vector<int> ff{4};
+        // std::array< int32_t, 5>
+        ff.push_back(6);
+        ff.push_back(7);
+        ff.push_back(9);
+        std::cout << ff[3] << "\n";
+        int tester{5};
+
+        std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
+
+        int a = indexer::element_exists(4, test);
+        int d = indexer::get_array_index_without_checking_exists(4, test);
+        std::cout << "exists: " << a << "index: " << d << "\n";
+
+
+        schema::FileRecord testrecord_1{
+            .inode = 1,
+            .parent_inode = 5,
+            .created_timestamp = 12345,
+            .size_bytes = 4,
+            .mode = 321,
+            .type{"txt"},
+            .file_name = {"file_1.txt"}
+        };
+
+        schema::FileRecord testrecord_2{
+            .inode = 2,
+            .parent_inode = 1,
+            .created_timestamp = 548722,
+            .size_bytes = 8,
+            .mode = 322,
+            .type{"sql"},
+            .file_name = {"query_file.sql"}
+        };
+
+
+        indexer::BPlusTreeManager testtree{"test_dir"};
+        testtree.add_record(testrecord_1);
+
+        indexer::BufferManager bufftest;
+
+        std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
+        std::cout << "\n TEST RECORD 2: \n" << testrecord_2.to_string() << "\n";
+
+        /*
+
+        std::cout << d << std::endl;
+
+
+        auto indval = std::lower_bound(ff.begin(), ff.end(), tester);
+        auto ind = std::distance(ff.begin(), indval);
+        std::cout << "sindex of " << tester << " = " << ind << "\n";
+        ff.insert(indval, tester);
+
+        for (auto &c: ff) {
+            std::cout << c << "\n";
+        }
+
+        return 0;
+        */
+    }
