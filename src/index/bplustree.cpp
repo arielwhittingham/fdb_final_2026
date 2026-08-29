@@ -141,7 +141,26 @@ namespace indexer {
                 }
                 // create database file if not exists
                 filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+                if (filestream.is_open()) {
+                    std::cout << "open" << "\n";
+                }
+                else {
+                    std::cout << "CANT open" << "\n";
+                }
+
                 filestream.close();
+            }
+            void write_to_file() {
+                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+
+                filestream << "newline \n";
+                filestream.close();
+
+            }
+            void read_from_file_to_memory(uint32_t page_number) {
+                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+
+
             }
 
 
@@ -237,6 +256,7 @@ namespace indexer {
         testtree.add_record(testrecord_1);
 
         indexer::BufferManager bufftest;
+        bufftest.write_to_file();
 
         std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
         std::cout << "\n TEST RECORD 2: \n" << testrecord_2.to_string() << "\n";
