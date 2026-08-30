@@ -124,7 +124,8 @@ namespace indexer {
         public:
             fs::path dir = DB_FILE_LOCATION;
             std::fstream filestream;
-            std::vector<MemoryPage> pages;
+            std::vector<uint32_t> record_ids;
+            uint32_t record_count;
 
             BufferManager() {
                 //create dir if not exist
@@ -154,12 +155,21 @@ namespace indexer {
 
                 filestream.close();
             }
-            void write_to_file(MemoryPage &page, uint32_t page_id ) {
+
+            uint32_t create_new_record() {
+                uint32_t this.records = root_header.node_count;
+                root_header.node_count++;
+                return new_page_id;
+            }
+
+
+            uint32_t write_to_file(schema::FileRecord &record) {
 
                 filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
                 filestream.write( reinterpret_cast<const char*>(&page), sizeof(page) );
-                std::cout << "wrote page #: " << page_id << "\n";
+                std::cout << "wrote page #: " << record.to_string() << "\n";
                 filestream.close();
+                return
 
             }
             void read_from_file_to_memory(uint32_t page_number) {
