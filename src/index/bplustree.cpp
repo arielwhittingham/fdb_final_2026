@@ -13,10 +13,10 @@
 namespace indexer {
     extern const int RECORDS_PER_PAGE = 10;
     extern const int PAGE_SIZE_IN_BYTES = 4096;
-    using page_id_type = std::uint32_t;
+    // using page_id_type = std::uint32_t;
     std::string DB_FILE_LOCATION = "../data/" ;
-    // std::string DB_FILE_NAME = "../data/databasefile.db" ;
-    std::string DB_FILE_NAME = "databasefile.db" ;
+    std::string DB_FILE_NAME = "../data/databasefile.db" ;
+    // std::string DB_FILE_NAME = "databasefile.db" ;
     namespace fs = std::filesystem;
 
 
@@ -86,6 +86,88 @@ namespace indexer {
         }
     }
 
+    //------------------------Record Management------------------------------------------------
+
+        struct StorageRecord {
+        uint32_t record_id;
+        schema::FileRecord row;
+
+    };
+        class BufferManager {
+
+        public:
+            fs::path dir = DB_FILE_LOCATION;
+            std::fstream filestream;
+            uint32_t record_count = 0;
+            std::vector<uint32_t> records;
+
+            BufferManager() {
+                //create dir if not exist
+                try {
+                    fs::create_directory(dir);
+                    fs::permissions(
+                        dir,
+                        fs::perms::owner_all
+                        );
+
+                }
+                catch (fs::filesystem_error& e) {
+                    std::cerr << "filesystem error, can't make directory" << e.what() << std::endl;
+                    return;
+                }
+                // create database file if not exists
+                if (fs::exists(DB_FILE_NAME)) {
+                    fs::remove(DB_FILE_NAME);
+                    std::ofstream touch(DB_FILE_NAME, std::ios::binary);
+
+                } else {
+
+                    std::ofstream touch(DB_FILE_NAME, std::ios::binary);
+
+                    // open file
+                    filestream.open(DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
+                    if (filestream.is_open()) {
+                        std::cout << "open" << "\n";
+                    }
+                    else {
+                        std::cout << "CANT open" << "\n";
+                    }
+
+                    filestream.close();
+                }
+            }
+
+            uint32_t create_new_record_id() {
+                this->record_count++;
+                return this->record_count;
+            }
+
+
+            uint32_t write_to_file(schema::FileRecord &record) {
+
+                uint32_t new_record_id = this->create_new_record_id();
+                this->records.push_back(new_record_id);
+                filestream.open(DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
+                filestream.write( reinterpret_cast<const char*>(&record), sizeof(record) );
+                std::cout << "\n wrote page #: " << record.to_string() << "\n";
+                std::cout << "\n recordcount /  new record created: " << new_record_id << "\n";
+                filestream.close();
+                return new_record_id;
+
+            }
+            void read_from_file_to_memory(uint32_t page_number) {
+                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+
+
+            }
+
+
+            // std::string &file_name;
+
+        };
+
+//------------------------B+Tree Management------------------------------------------------
+
     struct TreeRootHeader {
         uint32_t root_id;
         uint32_t node_count;
@@ -118,70 +200,6 @@ namespace indexer {
             std::memset(page_slot, 0, PAGE_SIZE_IN_BYTES);
         }
     };
-
-        class BufferManager {
-
-        public:
-            fs::path dir = DB_FILE_LOCATION;
-            std::fstream filestream;
-            std::vector<uint32_t> record_ids;
-            uint32_t record_count;
-
-            BufferManager() {
-                //create dir if not exist
-                try {
-                    fs::create_directory(dir);
-                    fs::permissions(
-                        dir,
-                        fs::perms::owner_all
-                        );
-
-                }
-                catch (fs::filesystem_error& e) {
-                    std::cerr << "filesystem error, can't make directory" << e.what() << std::endl;
-                    return;
-                }
-                // create database file if not exists
-                std::ofstream touch(DB_FILE_NAME, std::ios::binary);
-
-                // open file
-                filestream.open(DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
-                if (filestream.is_open()) {
-                    std::cout << "open" << "\n";
-                }
-                else {
-                    std::cout << "CANT open" << "\n";
-                }
-
-                filestream.close();
-            }
-
-            uint32_t create_new_record() {
-                uint32_t this.records = root_header.node_count;
-                root_header.node_count++;
-                return new_page_id;
-            }
-
-
-            uint32_t write_to_file(schema::FileRecord &record) {
-
-                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
-                filestream.write( reinterpret_cast<const char*>(&page), sizeof(page) );
-                std::cout << "wrote page #: " << record.to_string() << "\n";
-                filestream.close();
-                return
-
-            }
-            void read_from_file_to_memory(uint32_t page_number) {
-                filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
-
-
-            }
-
-
-            // std::string &file_name;
-
-        };
 
         /*
 
@@ -266,18 +284,19 @@ namespace indexer {
             .file_name = {"query_file.sql"}
         };
 
-       indexer::MemoryPage p;
-        p.page_slot = {1,2,3,4,5};
+       // indexer::MemoryPage p;
+       //  p.page_slot = {1,2,3,4,5};
 
 
         indexer::BPlusTreeManager testtree{"test_dir"};
         testtree.add_record(testrecord_1);
 
         indexer::BufferManager bufftest;
-        bufftest.write_to_file(p, 1);
 
+        auto rcount = bufftest.write_to_file(testrecord_2);
+
+        std::cout << "\n records in \n" << rcount << "\n";
         std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
-        std::cout << "\n TEST RECORD 2: \n" << testrecord_2.to_string() << "\n";
 
         /*
 
