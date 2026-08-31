@@ -11,7 +11,6 @@
 
 
 namespace indexer {
-    extern const int RECORDS_PER_PAGE = 10;
     extern const int PAGE_SIZE_IN_BYTES = 4096;
     // using page_id_type = std::uint32_t;
     std::string DB_FILE_LOCATION = "../data/" ;
@@ -143,7 +142,7 @@ namespace indexer {
             }
 
 
-            uint32_t write_to_file(schema::FileRecord &record) {
+            uint32_t write_record_to_file(schema::FileRecord &record) {
 
                 uint32_t new_record_id = this->create_new_record_id();
                 this->records.push_back(new_record_id);
@@ -158,23 +157,28 @@ namespace indexer {
             void read_from_file_to_memory(uint32_t page_number) {
                 filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
 
-
             }
-
-
-            // std::string &file_name;
 
         };
 
 //------------------------B+Tree Management------------------------------------------------
+
+    // this object is going to serve as the
+    // container for any record I am indexing on in
+    // my b+tree. This will include the immutable record_id from the
+    // records DB and the field_value(of any type) that I am indexing on.
+    template<typename T>
+    struct IndexRecord {
+        uint32_t record_id;
+        T field_value;
+    };
 
     struct TreeRootHeader {
         uint32_t root_id;
         uint32_t node_count;
     };
 
-
-    struct PageHead {
+    struct NodeHeader {
         uint32_t page_number;
         uint8_t type; // leaf or internal
         uint16_t item_count;
@@ -182,9 +186,9 @@ namespace indexer {
     };
 
     struct BPlusTreeNode {
-        PageHead header;
+        NodeHeader header;
         uint32_t next_leaf_id;
-        schema::FileRecord records[RECORDS_PER_PAGE];
+        IndexRecord<typename T> records[std::floor(sizeof(T) / PAGE_SIZE_IN_BYTES )]; // calculate node size
 
         BPlusTreeNode() {
             // constructor
@@ -193,31 +197,30 @@ namespace indexer {
     };
 
     //create a structure to store each new page
-    struct MemoryPage {
-        char page_slot[PAGE_SIZE_IN_BYTES];
-
-        MemoryPage() {
-            std::memset(page_slot, 0, PAGE_SIZE_IN_BYTES);
-        }
-    };
+    // struct MemoryPage {
+    //     char page_slot[PAGE_SIZE_IN_BYTES];
+    //
+    //     MemoryPage() {
+    //         std::memset(page_slot, 0, PAGE_SIZE_IN_BYTES);
+    //     }
+    // };
 
         /*
 
         */
         class BPlusTreeManager {
         public:
-            const std::string &starting_directory;
+            const std::string &starting_search_directory;
             TreeRootHeader root_header;
             BPlusTreeNode root_node;
 
 
-            /*
-              costructor below
-            */
+            // --------costructor below---------
+
             BPlusTreeManager(const std::string &starting_dir_param)
 
             // colon is the separator of variables before any constructor logic
-                : starting_directory{starting_dir_param},
+                : starting_search_directory{starting_dir_param},
                   root_header{0, 1} {
                 root_node.header.type = 1; //leaf
                 root_node.header.page_number = 0; //first node
