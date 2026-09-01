@@ -142,7 +142,7 @@ namespace indexer {
             }
 
 
-            uint32_t write_record_to_file(schema::FileRecord &record) {
+            uint32_t write_record_to_file(StorageRecord &record) {
 
                 uint32_t new_record_id = this->create_new_record_id();
                 this->records.push_back(new_record_id);
@@ -178,17 +178,16 @@ namespace indexer {
         uint32_t node_count;
     };
 
-    struct NodeHeader {
+
+
+    template<typename IndexDataType> // what data type is the index storing and ordering
+    struct BPlusTreeNode {
         uint32_t page_number;
         uint8_t type; // leaf or internal
         uint16_t item_count;
         uint32_t parent_page_number;
-    };
-
-    struct BPlusTreeNode {
-        NodeHeader header;
         uint32_t next_leaf_id;
-        IndexRecord<typename T> records[std::floor(sizeof(T) / PAGE_SIZE_IN_BYTES )]; // calculate node size
+        uint32_t records_per_node =  std::floor(PAGE_SIZE_IN_BYTES / sizeof(IndexDataType)); // calculate node size
 
         BPlusTreeNode() {
             // constructor
@@ -208,11 +207,15 @@ namespace indexer {
         /*
 
         */
+        template<typename IndexDataType> // what data type is the index storing and ordering
         class BPlusTreeManager {
         public:
             const std::string &starting_search_directory;
             TreeRootHeader root_header;
-            BPlusTreeNode root_node;
+            BPlusTreeNode<IndexDataType> root_node;
+            uint32_t records_per_node =  std::floor(PAGE_SIZE_IN_BYTES / sizeof(IndexDataType));
+
+
 
 
             // --------costructor below---------
