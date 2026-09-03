@@ -84,31 +84,18 @@ namespace indexer
     // return correct index of array to put it in sorted
     // only if it doesn't already exist
     template<std::size_t N, typename IndexDataType>
-    uint32_t get_array_index_without_checking_exists(IndexRecord<IndexDataType> search_value, const std::array<uint32_t, N> &keys)
+    std::size_t get_array_index_without_checking_exists(IndexRecord<IndexDataType> &search_value,
+                                                        const std::array<IndexDataType, N> &keys)
         {
-        if constexpr (N == 0)
-            {
-            return 0;
-            } else if constexpr (N == 1)
-            {
-            if (keys[0] > search_value)
-                {
-                return 1;
-                } else
-                {
-                return 0;
-                }
-            } else
-            {
-            auto index_iterator = std::lower_bound(keys.begin(), keys.end(), search_value);
+        auto index_iterator = std::lower_bound(keys.begin(), keys.end(), search_value);
 
-            auto index_value = std::distance(keys.begin(), index_iterator);
+        auto index_value = std::distance(keys.begin(), index_iterator);
 
-            std::cout << " search_value test: " << search_value << "\n";
+        std::cout << " search_value test: " << search_value << "\n";
 
-            return index_value;
-            }
+        return index_value;
         }
+
 
     //------------------------Record Management------------------------------------------------
 
@@ -208,17 +195,19 @@ namespace indexer
         {
         uint32_t page_number;
         NodeType type;
+        static constexpr std::size_t ARRAY_SIZE = 4096 / sizeof(IndexRecord<IndexDataType>);
         bool is_root = false;
         uint16_t record_count;
         uint32_t parent_page_number;
         uint32_t next_leaf_id;
+        std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records;
 
         // calculate node size
 
         BPlusTreeNode()
             {
             // constructor
-            std::cout << "this is the B+ tree constructor\n" << "\n \n" << std::endl;
+            std::cout << "this is the B+ Node tree constructor\n" << "\n \n" << std::endl;
             }
         };
 
@@ -231,9 +220,9 @@ namespace indexer
     public:
         const std::string &starting_search_directory;
         BPlusTreeNode<IndexDataType> root_node;
-        const uint32_t records_per_node = std::floor(PAGE_SIZE_IN_BYTES / sizeof(IndexDataType));
+        static constexpr std::size_t ARRAY_SIZE = std::floor(PAGE_SIZE_IN_BYTES / sizeof(IndexRecord<IndexDataType>));
         std::vector<BPlusTreeNode<IndexDataType> > tree_nodes;
-        uint32_t node_count = 0;
+        uint32_t node_count = 1;
 
 
         // --------constructor below---------
@@ -267,29 +256,27 @@ namespace indexer
 
         //--------------------------------method 1. add_record() --------------------------------
 
-        void add_record(const IndexRecord<T> &record, const BPlusTreeNode<T> &update_node)
+        void add_record(const IndexRecord<IndexDataType> &record, const BPlusTreeNode<IndexDataType> &update_node)
             {
             /// first condition the empty tree has no
             /// records in it yet
 
-                if (this->root_node.header.item_count == 0) //special first case make empty page with 0 records
-                    {
-                    this->root_node.records[0] = record;
-                    this->root_node.header.item_count = 1;
+            if (this->root_node.header.item_count == 0) //special first case make empty page with 0 records
+                {
+                this->root_node.records[0] = record;
+                this->root_node.header.item_count = 1;
+                }
+
+            // start logic for adding record
+            if (update_node->type == NodeType::Leaf) //if leaf
+                {
+                if (update_node->record_count < update_node.ARRAY_SIZE) //size is good
+                    { // safe to add to array
+                    // std::size_t get_array_index_without_checking_exists(IndexRecord<IndexDataType> &search_value, const std::array<IndexDataType, N> &keys)
+                    std::size_t insert_index = get_array_index_without_checking_exists(record, update_node->records);
+                    std::cout << "insert_index: " << insert_index << "\n";
                     }
-
-                // start logic for adding record
-                if (update_node->type == NodeType::Leaf) //if leaf
-                    {
-                    if (update_node->record_count < this->records_per_node) //size is good
-                        {// safe to add to array
-
-
-                        }
-
-                    }
-
-
+                }
             }
         }; //class end
     } //namspace end
@@ -334,8 +321,8 @@ int main()
 
     indexer::IndexRecord<char>
 
-    // indexer::MemoryPage p;
-    //  p.page_slot = {1,2,3,4,5};
+            // indexer::MemoryPage p;
+            //  p.page_slot = {1,2,3,4,5};
 
 
     indexer::BPlusTreeManager testtree{"test_dir"};
