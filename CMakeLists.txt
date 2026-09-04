@@ -6,4 +6,5 @@ set(CMAKE_CXX_STANDARD 23)
 add_executable(fdb_final_2026 main.cpp
         bplustree_practice.cpp
         src/crawl/readdir_lowlevel.cpp
-        src/index/bplustree.cpp)
+        src/index/bplustree.cpp
+        src/index/structs_bplustree.cpp)

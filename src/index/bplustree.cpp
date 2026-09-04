@@ -3,6 +3,7 @@
 #include "array"
 #include "vector"
 #include "../schema/schema_objects.h"
+#include "structs_bplustree.h"
 #include <string>
 #include <cstdint>
 #include <algorithm>
@@ -12,35 +13,7 @@
 
 namespace indexer
     {
-    extern const int PAGE_SIZE_IN_BYTES = 4096;
-    // using page_id_type = std::uint32_t;
-    std::string DB_FILE_LOCATION = "../data/";
-    std::string DB_FILE_NAME = "../data/databasefile.db";
-
-    // std::string DB_FILE_NAME = "databasefile.db" ;
-    enum class NodeType
-        {
-        Leaf,
-        Internal
-        };
-
     namespace fs = std::filesystem;
-
-
-    // this is a sentinel commonly used to represent and invalid ID
-    uint32_t invalid_page_id = UINT32_MAX;
-    /*
-
-    💡 Core ConceptThink of std::lower_bound as finding the earliest position where
-    you can insert a value without breaking the
-    sorted order of the container.If the value is found in the range,
-    it returns an iterator pointing to the first
-    occurrence of that value.If the value is not found, it returns an iterator pointing to the next
-    larger element.
-
-    If all elements in the range are smaller than the given value, it returns the end() iterator.
-
-    */
 
     /*
     Remaining steps in b+tree:
@@ -56,26 +29,6 @@ namespace indexer
 
     */
 
-    template<typename IndexDataType> // what data type is the index storing and ordering
-    struct IndexRecord
-        {
-        uint32_t record_id;
-        IndexDataType field_value;
-
-        static bool less_than_comparator(
-            const IndexRecord &lhs,
-            const IndexRecord &rhs)
-            {
-            if (lhs.field_value  != rhs.field_value)
-                {
-                return lhs.field_value < rhs.field_value;
-                }
-            else
-                {
-                return lhs.record_id < rhs.record_id;
-                }
-            }
-        };
 
     //-----------------HELPER Non-Member Methods ----------------
 
@@ -95,10 +48,22 @@ namespace indexer
         }
 
 
+    /*
+
+💡 Core ConceptThink of std::lower_bound as finding the earliest position where
+you can insert a value without breaking the
+sorted order of the container.If the value is found in the range,
+it returns an iterator pointing to the first
+occurrence of that value.If the value is not found, it returns an iterator pointing to the next
+larger element.
+
+If all elements in the range are smaller than the given value, it returns the end() iterator.
+
+*/
     // return correct index of array to put it in sorted
     // only if it doesn't already exist
     template<std::size_t N, typename IndexDataType>
-    std::size_t get_array_index_without_checking_exists(IndexRecord<IndexDataType> &search_value,
+    std::size_t get_array_index_without_checking_exists(TreeStructs::IndexRecord<IndexDataType> &search_value,
                                                         const std::array<IndexDataType, N> &keys,
                                                         std::size_t filled_slots)
         {
@@ -106,7 +71,7 @@ namespace indexer
             keys.begin(),
             keys.end() + filled_slots,
             search_value,
-            IndexRecord<IndexDataType>::less_than_comparator
+            TreeStructs::IndexRecord<IndexDataType>::less_than_comparator
             );
 
         auto index_value = std::distance(keys.begin(), index_iterator);
@@ -119,16 +84,10 @@ namespace indexer
 
     //------------------------Record Management------------------------------------------------
 
-    struct StorageRecord
-        {
-        uint32_t record_id;
-        schema::FileRecord row;
-        };
-
     class BufferManager
         {
     public:
-        fs::path dir = DB_FILE_LOCATION;
+        fs::path dir = TreeStructs::DB_FILE_LOCATION;
         std::fstream filestream;
         uint32_t record_count = 0;
         std::vector<uint32_t> records;
@@ -149,16 +108,16 @@ namespace indexer
                 return;
                 }
             // create database file if not exists
-            if (fs::exists(DB_FILE_NAME))
+            if (fs::exists(TreeStructs::DB_FILE_NAME))
                 {
-                fs::remove(DB_FILE_NAME);
-                std::ofstream touch(DB_FILE_NAME, std::ios::binary);
+                fs::remove(TreeStructs::DB_FILE_NAME);
+                std::ofstream touch(TreeStructs::DB_FILE_NAME, std::ios::binary);
                 } else
                 {
-                std::ofstream touch(DB_FILE_NAME, std::ios::binary);
+                std::ofstream touch(TreeStructs::DB_FILE_NAME, std::ios::binary);
 
                 // open file
-                filestream.open(DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
+                filestream.open(TreeStructs::DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
                 if (filestream.is_open())
                     {
                     std::cout << "open" << "\n";
@@ -178,11 +137,11 @@ namespace indexer
             }
 
 
-        uint32_t write_record_to_file(StorageRecord &record)
+        uint32_t write_record_to_file(TreeStructs::StorageRecord &record)
             {
             uint32_t new_record_id = this->create_new_record_id();
             this->records.push_back(new_record_id);
-            filestream.open(DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
+            filestream.open(TreeStructs::DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
             filestream.write(reinterpret_cast<const char *>(&record), sizeof(record));
             std::cout << "\n wrote page #: " << record.to_string() << "\n";
             std::cout << "\n recordcount /  new record created: " << new_record_id << "\n";
@@ -192,52 +151,11 @@ namespace indexer
 
         void read_from_file_to_memory(uint32_t page_number)
             {
-            filestream.open(DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+            filestream.open(TreeStructs::DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
             }
         };
 
     //------------------------B+Tree Management------------------------------------------------
-
-    // this object is going to serve as the
-    // container for any record I am indexing on in
-    // my b+tree. This will include the immutable record_id from the
-    // records DB and the field_value(of any type) that I am indexing on.
-
-    struct TreeRootHeader
-        {
-        uint32_t root_id;
-        uint32_t node_count;
-        };
-
-
-    template<typename IndexDataType> // what data type is the index storing and ordering
-    struct BPlusTreeNode
-        {
-        uint32_t page_number;
-        NodeType type;
-        static constexpr std::size_t ARRAY_SIZE = 4096 / sizeof(IndexRecord<IndexDataType>);
-        bool is_root = false;
-        uint16_t filled_slots;
-        uint32_t parent_page_number;
-        uint32_t next_leaf_id;
-        std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records;
-
-        // calculate node size
-
-        BPlusTreeNode()
-            : filled_slots(0)
-            {
-            // constructor
-            std::cout << "this is the B+ Node tree constructor\n" << "\n \n" << std::endl;
-            }
-        // always inrcement the record count when adding a new record
-        void add_to_array(IndexRecord<IndexDataType> &record, std::size_t index_at)
-            {
-            records.insert(records.begin(), index_at, record);
-            filled_slots++;
-
-            }
-        };
 
     /*
 
@@ -247,9 +165,9 @@ namespace indexer
         {
     public:
         const std::string &starting_search_directory;
-        BPlusTreeNode<IndexDataType> root_node;
-        static constexpr std::size_t ARRAY_SIZE = std::floor(PAGE_SIZE_IN_BYTES / sizeof(IndexRecord<IndexDataType>));
-        std::vector<BPlusTreeNode<IndexDataType> > tree_nodes;
+        TreeStructs::BPlusTreeNode<IndexDataType> root_node;
+        static constexpr std::size_t ARRAY_SIZE = std::floor(TreeStructs::PAGE_SIZE_IN_BYTES / sizeof(TreeStructs::IndexRecord<IndexDataType>));
+        std::vector<TreeStructs::BPlusTreeNode<IndexDataType> > tree_nodes;
         uint32_t node_count = 1;
 
 
@@ -262,11 +180,11 @@ namespace indexer
             : starting_search_directory{starting_dir_param},
               root_node{
               .page_number = 0,
-              .type = NodeType::Leaf, // leaf or internal
+              .type = TreeStructs::NodeType::Leaf, // leaf or internal
               .item_count = 0,
               .is_root = true,
-              .parent_page_number = invalid_page_id,
-              .next_leaf_id = invalid_page_id
+              .parent_page_number = TreeStructs::invalid_page_id,
+              .next_leaf_id = TreeStructs::invalid_page_id
               },
               tree_nodes{
               root_node,
@@ -284,7 +202,7 @@ namespace indexer
 
         //--------------------------------method 1. add_record() --------------------------------
 
-        void add_record(const IndexRecord<IndexDataType> &record, const BPlusTreeNode<IndexDataType> &update_node)
+        void add_record(const TreeStructs::IndexRecord<IndexDataType> &record, const TreeStructs::BPlusTreeNode<IndexDataType> &update_node)
             {
             /// first condition the empty tree has no
             /// records in it yet
@@ -296,7 +214,7 @@ namespace indexer
                 }
 
             // start logic for adding record
-            if (update_node->type == NodeType::Leaf) //if leaf
+            if (update_node->type == TreeStructs::NodeType::Leaf) //if leaf
                 {
                 if (update_node->filled_slots < update_node.ARRAY_SIZE) //size is good
                     { // safe to add to array
@@ -323,11 +241,11 @@ int main()
     std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
 
     int a = indexer::element_exists(4, test);
-    int d = indexer::get_array_index_without_checking_exists(4, test);
-    std::cout << "exists: " << a << "index: " << d << "\n";
+
+    std::cout << "exists: " << a << "\n";
 
 
-    schema::FileRecord testrecord_1{
+    schema::FileRecord test_file_record_1{
     .inode = 1,
     .parent_inode = 5,
     .created_timestamp = 12345,
@@ -337,7 +255,7 @@ int main()
     .file_name = {"file_1.txt"}
     };
 
-    schema::FileRecord testrecord_2{
+    schema::FileRecord test_file_record_2{
     .inode = 2,
     .parent_inode = 1,
     .created_timestamp = 548722,
@@ -347,21 +265,24 @@ int main()
     .file_name = {"query_file.sql"}
     };
 
-    indexer::IndexRecord<char>
+    TreeStructs::IndexRecord test_record_1{1, test_file_record_2.file_name};
 
+    std::cout << test_record_1.to_string() << std::endl;
+
+    // int d = indexer::get_array_index_without_checking_exists(test_record_1);
             // indexer::MemoryPage p;
             //  p.page_slot = {1,2,3,4,5};
 
 
-    indexer::BPlusTreeManager testtree{"test_dir"};
-    testtree.add_record(testrecord_1);
+    // indexer::BPlusTreeManager testtree{"test_dir"};
+    // testtree.add_record(testrecord_1);
 
     indexer::BufferManager bufftest;
 
-    auto rcount = bufftest.write_to_file(testrecord_2);
+    // auto rcount = bufftest.write_record_to_file();
 
-    std::cout << "\n records in \n" << rcount << "\n";
-    std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
+    // std::cout << "\n records in \n" << rcount << "\n";
+    // std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
 
     /*
 
