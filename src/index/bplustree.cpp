@@ -11,7 +11,7 @@
 #include <filesystem>
 
 
-namespace indexer
+namespace Index
     {
     namespace fs = std::filesystem;
 
@@ -66,7 +66,7 @@ If all elements in the range are smaller than the given value, it returns the en
     class BufferManager
         {
     public:
-        fs::path dir = Structures::DB_FILE_LOCATION;
+        fs::path dir = Struc::DB_FILE_LOCATION;
         std::fstream filestream;
         uint32_t record_count = 0;
         std::vector<uint32_t> records;
@@ -87,16 +87,16 @@ If all elements in the range are smaller than the given value, it returns the en
                 return;
                 }
             // create database file if not exists
-            if (fs::exists(Structures::DB_FILE_NAME))
+            if (fs::exists(Struc::DB_FILE_NAME))
                 {
-                fs::remove(Structures::DB_FILE_NAME);
-                std::ofstream touch(Structures::DB_FILE_NAME, std::ios::binary);
+                fs::remove(Struc::DB_FILE_NAME);
+                std::ofstream touch(Struc::DB_FILE_NAME, std::ios::binary);
                 } else
                 {
-                std::ofstream touch(Structures::DB_FILE_NAME, std::ios::binary);
+                std::ofstream touch(Struc::DB_FILE_NAME, std::ios::binary);
 
                 // open file
-                filestream.open(Structures::DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
+                filestream.open(Struc::DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
                 if (filestream.is_open())
                     {
                     std::cout << "open" << "\n";
@@ -116,11 +116,11 @@ If all elements in the range are smaller than the given value, it returns the en
             }
 
 
-        uint32_t write_record_to_file(Structures::StorageRecord &record)
+        uint32_t write_record_to_file(Struc::StorageRecord &record)
             {
             uint32_t new_record_id = this->create_new_record_id();
             this->records.push_back(new_record_id);
-            filestream.open(Structures::DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
+            filestream.open(Struc::DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
             filestream.write(reinterpret_cast<const char *>(&record), sizeof(record));
             std::cout << "\n wrote page #: " << record.to_string() << "\n";
             std::cout << "\n recordcount /  new record created: " << new_record_id << "\n";
@@ -130,7 +130,7 @@ If all elements in the range are smaller than the given value, it returns the en
 
         void read_from_file_to_memory(uint32_t page_number)
             {
-            filestream.open(Structures::DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
+            filestream.open(Struc::DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
             }
         };
 
@@ -144,10 +144,10 @@ If all elements in the range are smaller than the given value, it returns the en
         {
     public:
         const std::string &starting_search_directory;
-        Structures::BPlusTreeNode<IndexDataType> root_node;
+        uint32_t root_id{};
         static constexpr std::size_t ARRAY_SIZE = std::floor(
-            Structures::PAGE_SIZE_IN_BYTES / sizeof(Structures::IndexRecord<IndexDataType>));
-        std::vector<Structures::BPlusTreeNode<IndexDataType> > tree_nodes;
+            Struc::PAGE_SIZE_IN_BYTES / sizeof(Struc::IndexRecord<IndexDataType>));
+        std::vector<Struc::BPlusTreeNode<IndexDataType> > tree_nodes;
         uint32_t node_count = 1;
 
 
@@ -158,20 +158,20 @@ If all elements in the range are smaller than the given value, it returns the en
         // colon is the separator of variables before any constructor logic
         // initializes the root node and then assigns it to the vector of nodes
             : starting_search_directory{starting_dir_param},
-              root_node{
-              .page_number = 0,
-              .type = Structures::NodeType::Leaf, // leaf or internal
-              .item_count = 0,
-              .is_root = true,
-              .parent_page_number = Structures::invalid_page_id,
-              .next_leaf_id = Structures::invalid_page_id
-              },
-              tree_nodes{
-              root_node,
-              }
+              tree_nodes{}
             {
-            //empty constructr
+            Struc::BPlusTreeNode<IndexDataType> root_node{};
+            root_node.page_number = 0;
+            root_node.type = Struc::NodeType::Leaf;
+            root_node.is_root = true;
+            root_node.filled_slots = 0;
+            root_node.parent_page_number = Struc::invalid_page_id;
+            root_node.next_leaf_id = Struc::invalid_page_id;
+            tree_nodes.push_back(root_node);
+            this->root_id = root_node.page_number;
+
             }
+
 
         // uint32_t create_new_page_id()
         //     {
@@ -182,27 +182,28 @@ If all elements in the range are smaller than the given value, it returns the en
 
         //--------------------------------method 1. add_record() --------------------------------
 
-        void add_record(const Structures::IndexRecord<IndexDataType> &record,
-                        const Structures::BPlusTreeNode<IndexDataType> &update_node)
+        void add_record(const Struc::IndexRecord<IndexDataType> &record)
             {
-            /// first condition the empty tree has no
-            /// records in it yet
 
-            if (this->root_node.header.item_count == 0) //special first case make empty page with 0 records
-                {
-                this->root_node.records[0] = record;
-                this->root_node.header.item_count = 1;
-                }
 
-            // start logic for adding record
-            if (update_node->type == Structures::NodeType::Leaf) //if leaf
+            // special case when only the root exists
+            if (this->node_count == 0)
                 {
-                if (update_node->filled_slots < update_node.ARRAY_SIZE) //size is good
-                    { // safe to add to array
-                    // std::size_t get_array_index_without_checking_exists(IndexRecord<IndexDataType> &search_value, const std::array<IndexDataType, N> &keys)
-                    // std::size_t insert_index = get_array_index_without_checking_exists(record, update_node->records);
-                    // std::cout << "insert_index: " << insert_index << "\n";
+                // if only root exists that means that udate_node is
+                // the root node
+
+                Struc::BPlusTreeNode<IndexDataType> updatre_node = tree_nodes[this->root_id];
+
+
+
+
+                    {
+                    if (update_node->filled_slots < update_node.ARRAY_SIZE) //size is good
+                        { // safe to add to array
+                        update_node.add_record_to_node(record);
+                        }
                     }
+
                 }
             }
         }; //class end
@@ -221,7 +222,7 @@ int main()
 
     std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
 
-    int a = indexer::element_exists(4, test);
+    int a = Index::element_exists(4, test);
 
     std::cout << "exists: " << a << "\n";
 
@@ -267,10 +268,11 @@ int main()
     .file_name = {"ariel_query_file.sql"}
     };
 
-    Structures::IndexRecord test_record_1{1, test_file_record_1.file_name};
-    Structures::IndexRecord test_record_2{2, test_file_record_2.file_name};
-    Structures::IndexRecord test_record_3{3, test_file_record_3.file_name};
-    Structures::IndexRecord test_record_4{4, test_file_record_4.file_name};
+
+    Struc::IndexRecord test_record_1{1, test_file_record_1.file_name};
+    Struc::IndexRecord test_record_2{2, test_file_record_2.file_name};
+    Struc::IndexRecord test_record_3{3, test_file_record_3.file_name};
+    Struc::IndexRecord test_record_4{4, test_file_record_4.file_name};
 
     std::cout << test_record_1.to_string() << std::endl;
     std::cout << test_record_2.to_string() << std::endl;
@@ -278,11 +280,11 @@ int main()
     std::cout << test_record_4.to_string() << std::endl;
 
 
-    Structures::BPlusTreeNode<Structures::FileNameDataType> test_node;
+    Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
     test_node.page_number = 1;
-    test_node.type = Structures::NodeType::Leaf;
-    test_node.parent_page_number = Structures::invalid_page_id;
-    test_node.next_leaf_id = Structures::invalid_page_id;
+    test_node.type = Struc::NodeType::Leaf;
+    test_node.parent_page_number = Struc::invalid_page_id;
+    test_node.next_leaf_id = Struc::invalid_page_id;
 
     test_node.add_record_to_node(test_record_1);
     test_node.add_record_to_node(test_record_2);
@@ -295,16 +297,18 @@ int main()
     std::cout << test_node.to_string() << "\n";
 
 
+    Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
 
-    // int d = indexer::get_array_index_without_checking_exists(test_record_1);
-    // indexer::MemoryPage p;
+
+    // int d = Index::get_array_index_without_checking_exists(test_record_1);
+    // Index::MemoryPage p;
     //  p.page_slot = {1,2,3,4,5};
 
 
-    // indexer::BPlusTreeManager testtree{"test_dir"};
+    // Index::BPlusTreeManager testtree{"test_dir"};
     // testtree.add_record(testrecord_1);
 
-    indexer::BufferManager bufftest;
+    Index::BufferManager bufftest;
 
     // auto rcount = bufftest.write_record_to_file();
 

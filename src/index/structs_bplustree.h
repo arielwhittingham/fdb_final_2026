@@ -7,7 +7,7 @@
 #include "../schema/schema_objects.h"
 
 
-namespace Structures
+namespace Struc
     {
     //------------------------Constants------------------------------------------------
     enum class NodeType
@@ -20,6 +20,7 @@ namespace Structures
     // using page_id_type = std::uint32_t;
     std::string DB_FILE_LOCATION = "../data/";
     std::string DB_FILE_NAME = "../data/databasefile.db";
+    std::string TEST_STARTING_DIRECTORY ="/Users/arielwhittingham/prod_workspace/";
     // std::string DB_FILE_NAME = "databasefile.db"
     // this is a sentinel commonly used to represent and invalid ID
     uint32_t invalid_page_id = UINT32_MAX;
