@@ -285,6 +285,12 @@ int main()
     test_node.next_leaf_id = Structures::invalid_page_id;
 
     test_node.add_record_to_node(test_record_1);
+    test_node.add_record_to_node(test_record_2);
+    test_node.add_record_to_node(test_record_3);
+    test_node.add_record_to_node(test_record_4);
+
+    std::cout << " \n\n\n\n\n\n\n -----------printing out test node below------------" << std::endl;
+
 
     std::cout << test_node.to_string() << "\n";
 

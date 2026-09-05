@@ -111,18 +111,18 @@ namespace Structures
 
         template<std::size_t N>
         std::size_t get_array_index_without_checking_exists(IndexRecord<IndexDataType> &search_value,
-                                                            const std::array<IndexDataType, N> &keys)
+                                                            const std::array<IndexRecord<IndexDataType>, N> &keys)
             {
             auto index_iterator = std::lower_bound(
                 keys.begin(),
-                keys.end() + filled_slots,
+                keys.begin() + filled_slots,
                 search_value,
                 IndexRecord<IndexDataType>::less_than_comparator
             );
 
             auto index_value = std::distance(keys.begin(), index_iterator);
 
-            std::cout << " search_value test: " << search_value << "\n";
+            std::cout << " search_value test: " << search_value.to_string() << "\n";
 
             return index_value;
             }
@@ -130,7 +130,11 @@ namespace Structures
         // always inrcement the record count when adding a new record
         void add_to_array(IndexRecord<IndexDataType> &record, std::size_t index_at)
             {
-            records.insert(records.begin(), index_at, record);
+            std::move_backward(records.begin() + index_at,
+                    records.begin() + filled_slots,
+                    records.begin() + filled_slots +1
+                );
+            records[index_at] = record;
             filled_slots++;
             }
 
