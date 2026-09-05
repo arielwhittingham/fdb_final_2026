@@ -1,12 +1,13 @@
 #pragma once
 
-#include "iostream"
-#include "array"
-#include "vector"
+#include <iostream>
+#include <array>
+#include <vector>
+#include <string>
 #include "../schema/schema_objects.h"
 
 
-namespace TreeStructs
+namespace Structures
     {
     //------------------------Constants------------------------------------------------
     enum class NodeType
@@ -23,6 +24,7 @@ namespace TreeStructs
     // this is a sentinel commonly used to represent and invalid ID
     uint32_t invalid_page_id = UINT32_MAX;
     using FileNameDataType = std::array<char, 255>;
+
 
 
     //------------------------Record Management------------------------------------------------
@@ -107,13 +109,59 @@ namespace TreeStructs
             std::cout << "this is the B+ Node tree constructor\n" << "\n \n" << std::endl;
             }
 
+        template<std::size_t N>
+        std::size_t get_array_index_without_checking_exists(IndexRecord<IndexDataType> &search_value,
+                                                            const std::array<IndexDataType, N> &keys)
+            {
+            auto index_iterator = std::lower_bound(
+                keys.begin(),
+                keys.end() + filled_slots,
+                search_value,
+                IndexRecord<IndexDataType>::less_than_comparator
+            );
+
+            auto index_value = std::distance(keys.begin(), index_iterator);
+
+            std::cout << " search_value test: " << search_value << "\n";
+
+            return index_value;
+            }
+
         // always inrcement the record count when adding a new record
         void add_to_array(IndexRecord<IndexDataType> &record, std::size_t index_at)
             {
             records.insert(records.begin(), index_at, record);
             filled_slots++;
             }
+
+        void add_record_to_node(IndexRecord<IndexDataType> &record)
+            {
+            std::size_t ind =  get_array_index_without_checking_exists(record, records);
+            add_to_array(record, ind);
+            }
+
+        std::string to_string()
+            {
+            std::string array_res = "\n ";
+            std::string separator = " \n ";
+            for (std::size_t i = 0; i < filled_slots;)
+                {
+                array_res += records[i].to_string() + separator;
+                i++;
+                }
+
+
+            return
+                    "\n page num: " + std::to_string(page_number) +
+                    "\n array size: " + std::to_string(ARRAY_SIZE) +
+                    "\n is root: " + std::to_string(is_root) +
+                    "\n filled: " + std::to_string(filled_slots) +
+                    "\n parent:" + std::to_string(parent_page_number) +
+                    "\n next leaf: " + std::to_string(next_leaf_id) +
+                    "\n records: " + array_res;
+            }
         };
+
 
     /*
 
