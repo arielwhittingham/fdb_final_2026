@@ -198,20 +198,23 @@ If all elements in the range are smaller than the given value, it returns the en
             .filled_slots = 0,
             .parent_page_number = Struc::invalid_page_id,
             .next_leaf_id = Struc::invalid_page_id
-            //ADD TO VECTOR
             };
+            //ADD TO VECTOR
+            this->tree_nodes.emplace_back(blank_leaf);
           }
         else
           {
             /* NEW INTERNAL NODE   */
-            Struc::BPlusTreeNode<IndexDataType> blank_leaf{
+            Struc::BPlusTreeNode<IndexDataType> blank_leaf
+            {
             .page_number = new_page_id,
             .type = Struc::NodeType::Internal,
             .filled_slots = 0,
             .parent_page_number = Struc::invalid_page_id,
             .next_leaf_id = Struc::invalid_page_id
-            //ADD TO VECTOR
             };
+            //ADD TO VECTOR
+            this->tree_nodes.emplace_back(blank_leaf);
           }
 
         this->node_count++;
@@ -228,13 +231,11 @@ If all elements in the range are smaller than the given value, it returns the en
       }
 
 
-    Struc::SplitLeafOutput<IndexDataType> split_node
-    (
-      Struc::BPlusTreeNode<IndexDataType> &update_node
-    )
+    Struc::SplitLeafOutput<IndexDataType> split_node(Struc::BPlusTreeNode<IndexDataType>
+      &update_node)
       {
         std::size_t middle_index;
-        Struc::IndexRecord<IndexDataType> sep{};
+        Struc::IndexRecord<IndexDataType> separator_record{};
 
 
         if (update_node.filled_slots % 2 == 0)
@@ -246,13 +247,26 @@ If all elements in the range are smaller than the given value, it returns the en
             middle_index = std::floor(update_node.filled_slots / 2);
           }
         std::cout << middle_index << std::endl;
-        sep = update_node.records.at(middle_index);
+        separator_record = update_node.records.at(middle_index);
+
+        /* create new blank leaf node and return split output*/
+        uint32_t new_right_leaf = create_new_page(Struc::NodeType::Leaf);
+
+        Struc::SplitLeafOutput<IndexDataType> split_return
+        {
+        .left_node_id_original = update_node.page_number,
+        .right_node_id_new = new_right_leaf,
+        .separator_sent_up = separator_record
+        };
+        return split_return;
 
         /* when there is no parent means we are the root*/
-        if (update_node.parent_page_number == Struc::invalid_page_id)
-          {
-            //create new root
-          }
+        // if (update_node.parent_page_number == Struc::invalid_page_id)
+        //   {
+        //     //create new root
+        //     uint32_t new_root_id = create_new_page(Struc::NodeType::Internal);
+        //     this->root_id = new_root_id;
+        //   }
         /*   */
       }
 

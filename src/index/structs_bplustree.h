@@ -96,9 +96,9 @@ namespace Struc
     template<typename IndexDataType>
     struct SplitLeafOutput
         {
-        uint32_t left_node_id;
-        uint32_t right_node_id;
-        IndexRecord<IndexDataType> separator;
+        uint32_t left_node_id_original;
+        uint32_t right_node_id_new;
+        IndexRecord<IndexDataType> separator_sent_up;
         };
 
 
