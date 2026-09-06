@@ -192,13 +192,13 @@ If all elements in the range are smaller than the given value, it returns the en
                 // if only root exists that means that udate_node is
                 // the root node
 
-                Struc::BPlusTreeNode<IndexDataType> updatre_node = tree_nodes[this->root_id];
-
-
+                // this selects the root node to update
+                // outside of this special case
+                Struc::BPlusTreeNode<IndexDataType> update_node = tree_nodes[this->root_id];
 
 
                     {
-                    if (update_node->filled_slots < update_node.ARRAY_SIZE) //size is good
+                    if (update_node->filled_slots < update_node->ARRAY_SIZE) //size is good
                         { // safe to add to array
                         update_node.add_record_to_node(record);
                         }
@@ -280,25 +280,32 @@ int main()
     std::cout << test_record_4.to_string() << std::endl;
 
 
-    Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
-    test_node.page_number = 1;
-    test_node.type = Struc::NodeType::Leaf;
-    test_node.parent_page_number = Struc::invalid_page_id;
-    test_node.next_leaf_id = Struc::invalid_page_id;
+    // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
+    // test_node.page_number = 1;
+    // test_node.type = Struc::NodeType::Leaf;
+    // test_node.parent_page_number = Struc::invalid_page_id;
+    // test_node.next_leaf_id = Struc::invalid_page_id;
 
-    test_node.add_record_to_node(test_record_1);
-    test_node.add_record_to_node(test_record_2);
-    test_node.add_record_to_node(test_record_3);
-    test_node.add_record_to_node(test_record_4);
+    // test_node.add_record_to_node(test_record_1);
+    // test_node.add_record_to_node(test_record_2);
+    // test_node.add_record_to_node(test_record_3);
+    // test_node.add_record_to_node(test_record_4);
+
 
     std::cout << " \n\n\n\n\n\n\n -----------printing out test node below------------" << std::endl;
 
 
-    std::cout << test_node.to_string() << "\n";
+
 
 
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
+    bptree.add_record(test_record_1);
+    bptree.add_record(test_record_2);
+    bptree.add_record(test_record_3);
+    bptree.add_record(test_record_4);
 
+
+    std::cout << test_node.to_string() << "\n";
 
     // int d = Index::get_array_index_without_checking_exists(test_record_1);
     // Index::MemoryPage p;

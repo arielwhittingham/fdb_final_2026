@@ -4,6 +4,7 @@
 #include <array>
 #include <vector>
 #include <string>
+#include <stdexcept>
 #include "../schema/schema_objects.h"
 
 
@@ -20,12 +21,11 @@ namespace Struc
     // using page_id_type = std::uint32_t;
     std::string DB_FILE_LOCATION = "../data/";
     std::string DB_FILE_NAME = "../data/databasefile.db";
-    std::string TEST_STARTING_DIRECTORY ="/Users/arielwhittingham/prod_workspace/";
+    std::string TEST_STARTING_DIRECTORY = "/Users/arielwhittingham/prod_workspace/";
     // std::string DB_FILE_NAME = "databasefile.db"
     // this is a sentinel commonly used to represent and invalid ID
     uint32_t invalid_page_id = UINT32_MAX;
     using FileNameDataType = std::array<char, 255>;
-
 
 
     //------------------------Record Management------------------------------------------------
@@ -62,12 +62,20 @@ namespace Struc
             const IndexRecord &lhs,
             const IndexRecord &rhs)
             {
-            if (lhs.field_value != rhs.field_value)
+            try
                 {
-                return lhs.field_value < rhs.field_value;
-                } else
-                {
-                return lhs.record_id < rhs.record_id;
+                if (lhs.field_value != rhs.field_value)
+                    {
+                    return lhs.field_value < rhs.field_value;
+                    } else
+                        {
+                        return lhs.record_id < rhs.record_id;
+                        }
+                else {
+                    throw std::runtime_error("trying to add duplicate record to array");
+
+                }
+
                 }
             }
 
@@ -132,16 +140,16 @@ namespace Struc
         void add_to_array(IndexRecord<IndexDataType> &record, std::size_t index_at)
             {
             std::move_backward(records.begin() + index_at,
-                    records.begin() + filled_slots,
-                    records.begin() + filled_slots +1
-                );
+                               records.begin() + filled_slots,
+                               records.begin() + filled_slots + 1
+            );
             records[index_at] = record;
             filled_slots++;
             }
 
         void add_record_to_node(IndexRecord<IndexDataType> &record)
             {
-            std::size_t ind =  get_array_index_without_checking_exists(record, records);
+            std::size_t ind = get_array_index_without_checking_exists(record, records);
             add_to_array(record, ind);
             }
 
