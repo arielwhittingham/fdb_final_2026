@@ -305,7 +305,7 @@ int main()
     bptree.add_record(test_record_4);
 
 
-    std::cout << test_node.to_string() << "\n";
+    std::cout << bptree.tree_nodes[0].to_string() << "\n";
 
     // int d = Index::get_array_index_without_checking_exists(test_record_1);
     // Index::MemoryPage p;

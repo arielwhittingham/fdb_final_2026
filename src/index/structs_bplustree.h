@@ -60,24 +60,18 @@ namespace Struc
 
         static bool less_than_comparator(
             const IndexRecord &lhs,
-            const IndexRecord &rhs)
+            const IndexRecord &rhs
+        )
             {
-            try
+            if (lhs.field_value != rhs.field_value)
                 {
-                if (lhs.field_value != rhs.field_value)
-                    {
-                    return lhs.field_value < rhs.field_value;
-                    } else
-                        {
-                        return lhs.record_id < rhs.record_id;
-                        }
-                else {
-                    throw std::runtime_error("trying to add duplicate record to array");
-
-                }
-
+                return lhs.field_value < rhs.field_value;
+                } else
+                {
+                return lhs.record_id < rhs.record_id;
                 }
             }
+
 
         std::string to_string() const
             {
