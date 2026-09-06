@@ -12,43 +12,43 @@
 
 
 namespace Index
+  {
+  namespace fs = std::filesystem;
+
+  /*
+  Remaining steps in b+tree:
+
+  1. Finish ordered vector for storing by ordered key for both
+  the key vector and the data vector(use the same index)
+  2. Make function to do basic traversal based on keys
+  3. Adding new values when there is existing room
+  4. Traverse linked list laterally between nodes
+  5. Removing values when there is no structural side effect
+  6. Function to decide when adding new value will result in a break in rules such that the base needs to grow
+  7.
+
+  */
+
+
+  //-----------------HELPER Non-Member Methods ----------------
+
+  template<std::size_t N>
+  bool element_exists(uint32_t search_value, std::array<uint32_t, N> &search_array)
     {
-    namespace fs = std::filesystem;
-
-    /*
-    Remaining steps in b+tree:
-
-    1. Finish ordered vector for storing by ordered key for both
-    the key vector and the data vector(use the same index)
-    2. Make function to do basic traversal based on keys
-    3. Adding new values when there is existing room
-    4. Traverse linked list laterally between nodes
-    5. Removing values when there is no structural side effect
-    6. Function to decide when adding new value will result in a break in rules such that the base needs to grow
-    7.
-
-    */
-
-
-    //-----------------HELPER Non-Member Methods ----------------
-
-    template<std::size_t N>
-    bool element_exists(uint32_t search_value, std::array<uint32_t, N> &search_array)
+      uint32_t return_index = 0;
+      for (const auto &item: search_array)
         {
-        uint32_t return_index = 0;
-        for (const auto &item: search_array)
+          if (item == search_value)
             {
-            if (item == search_value)
-                {
-                return true;
-                }
-            return_index++;
+              return true;
             }
-        return false;
+          return_index++;
         }
+      return false;
+    }
 
 
-    /*
+  /*
 
 💡 Core ConceptThink of std::lower_bound as finding the earliest position where
 you can insert a value without breaking the
@@ -61,156 +61,235 @@ If all elements in the range are smaller than the given value, it returns the en
 
 */
 
-    //------------------------Record Management------------------------------------------------
+  //------------------------Record Management------------------------------------------------
 
-    class BufferManager
-        {
-    public:
-        fs::path dir = Struc::DB_FILE_LOCATION;
-        std::fstream filestream;
-        uint32_t record_count = 0;
-        std::vector<uint32_t> records;
+  class BufferManager
+    {
+  public:
+    fs::path dir = Struc::DB_FILE_LOCATION;
+    std::fstream filestream;
+    uint32_t record_count = 0;
+    std::vector<uint32_t> records;
 
-        BufferManager()
-            {
-            //create dir if not exist
-            try
-                {
-                fs::create_directory(dir);
-                fs::permissions(
-                    dir,
-                    fs::perms::owner_all
-                );
-                } catch (fs::filesystem_error &e)
-                {
-                std::cerr << "filesystem error, can't make directory" << e.what() << std::endl;
-                return;
-                }
-            // create database file if not exists
-            if (fs::exists(Struc::DB_FILE_NAME))
-                {
-                fs::remove(Struc::DB_FILE_NAME);
-                std::ofstream touch(Struc::DB_FILE_NAME, std::ios::binary);
-                } else
-                {
-                std::ofstream touch(Struc::DB_FILE_NAME, std::ios::binary);
+    BufferManager()
+      {
+        //create dir if not exist
+        try
+          {
+            fs::create_directory(dir);
+            fs::permissions(
+              dir,
+              fs::perms::owner_all
+            );
+          } catch (fs::filesystem_error &e)
+          {
+            std::cerr << "filesystem error, can't make directory" << e.what() <<
+                std::endl;
+            return;
+          }
+        // create database file if not exists
+        if (fs::exists(Struc::DB_FILE_NAME))
+          {
+            fs::remove(Struc::DB_FILE_NAME);
+            std::ofstream touch(Struc::DB_FILE_NAME, std::ios::binary);
+          }
+        else
+          {
+            std::ofstream touch(Struc::DB_FILE_NAME, std::ios::binary);
 
-                // open file
-                filestream.open(Struc::DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
-                if (filestream.is_open())
-                    {
-                    std::cout << "open" << "\n";
-                    } else
-                    {
-                    std::cout << "CANT open" << "\n";
-                    }
+            // open file
+            filestream.open(
+              Struc::DB_FILE_NAME,
+              std::ios::binary | std::ios::in | std::ios::out);
+            if (filestream.is_open())
+              {
+                std::cout << "open" << "\n";
+              }
+            else
+              {
+                std::cout << "CANT open" << "\n";
+              }
 
-                filestream.close();
-                }
-            }
-
-        uint32_t create_new_record_id()
-            {
-            this->record_count++;
-            return this->record_count;
-            }
-
-
-        uint32_t write_record_to_file(Struc::StorageRecord &record)
-            {
-            uint32_t new_record_id = this->create_new_record_id();
-            this->records.push_back(new_record_id);
-            filestream.open(Struc::DB_FILE_NAME, std::ios::binary | std::ios::in | std::ios::out);
-            filestream.write(reinterpret_cast<const char *>(&record), sizeof(record));
-            std::cout << "\n wrote page #: " << record.to_string() << "\n";
-            std::cout << "\n recordcount /  new record created: " << new_record_id << "\n";
             filestream.close();
-            return new_record_id;
-            }
+          }
+      }
 
-        void read_from_file_to_memory(uint32_t page_number)
-            {
-            filestream.open(Struc::DB_FILE_LOCATION, std::ios::binary | std::ios::in | std::ios::out);
-            }
-        };
-
-    //------------------------B+Tree Management------------------------------------------------
-
-    /*
-
-    */
-    template<typename IndexDataType> // what data type is the index storing and ordering
-    class BPlusTreeManager
-        {
-    public:
-        const std::string &starting_search_directory;
-        uint32_t root_id{};
-        static constexpr std::size_t ARRAY_SIZE = std::floor(
-            Struc::PAGE_SIZE_IN_BYTES / sizeof(Struc::IndexRecord<IndexDataType>));
-        std::vector<Struc::BPlusTreeNode<IndexDataType> > tree_nodes;
-        uint32_t node_count = 1;
+    uint32_t create_new_record_id()
+      {
+        this->record_count++;
+        return this->record_count;
+      }
 
 
-        // --------constructor below---------
+    uint32_t write_record_to_file(Struc::StorageRecord &record)
+      {
+        uint32_t new_record_id = this->create_new_record_id();
+        this->records.push_back(new_record_id);
+        filestream.open(
+          Struc::DB_FILE_NAME,
+          std::ios::binary | std::ios::in | std::ios::out);
+        filestream.write(
+          reinterpret_cast<const char *>(&record),
+          sizeof(record));
+        std::cout << "\n wrote page #: " << record.to_string() << "\n";
+        std::cout << "\n recordcount /  new record created: " << new_record_id <<
+            "\n";
+        filestream.close();
+        return new_record_id;
+      }
 
-        BPlusTreeManager(const std::string &starting_dir_param)
+    void read_from_file_to_memory(uint32_t page_number)
+      {
+        filestream.open(
+          Struc::DB_FILE_LOCATION,
+          std::ios::binary | std::ios::in | std::ios::out);
+      }
+    };
 
-        // colon is the separator of variables before any constructor logic
-        // initializes the root node and then assigns it to the vector of nodes
-            : starting_search_directory{starting_dir_param},
-              tree_nodes{}
-            {
-            Struc::BPlusTreeNode<IndexDataType> root_node{};
-            root_node.page_number = 0;
-            root_node.type = Struc::NodeType::Leaf;
-            root_node.is_root = true;
-            root_node.filled_slots = 0;
-            root_node.parent_page_number = Struc::invalid_page_id;
-            root_node.next_leaf_id = Struc::invalid_page_id;
-            tree_nodes.push_back(root_node);
-            this->root_id = root_node.page_number;
+  //------------------------B+Tree Management------------------------------------------------
 
-            }
+  /*
 
-
-        // uint32_t create_new_page_id()
-        //     {
-        //     uint32_t new_page_id = root_header.node_count;
-        //     root_header.node_count++;
-        //     return new_page_id;
-        //     }
-
-        //--------------------------------method 1. add_record() --------------------------------
-
-        void add_record(const Struc::IndexRecord<IndexDataType> &record)
-            {
-
-
-            // special case when only the root exists
-            if (this->node_count == 0)
-                {
-                // if only root exists that means that udate_node is
-                // the root node
-
-                // this selects the root node to update
-                // outside of this special case
-                Struc::BPlusTreeNode<IndexDataType> update_node = tree_nodes[this->root_id];
+  */
+  template<typename IndexDataType>
+  // what data type is the index storing and ordering
+  class BPlusTreeManager
+    {
+  public:
+    const std::string &starting_search_directory;
+    uint32_t root_id{};
+    static constexpr std::size_t ARRAY_SIZE = std::floor(
+                                                Struc::PAGE_SIZE_IN_BYTES / sizeof(
+                                                  Struc::IndexRecord<IndexDataType>)) - 1;
+    std::vector<Struc::BPlusTreeNode<IndexDataType> > tree_nodes;
+    uint32_t node_count = 1;
 
 
-                    {
-                    if (update_node->filled_slots < update_node->ARRAY_SIZE) //size is good
-                        { // safe to add to array
-                        update_node.add_record_to_node(record);
-                        }
-                    }
+    // --------constructor below---------
 
-                }
-            }
-        }; //class end
-    } //namspace end
+    BPlusTreeManager(const std::string &starting_dir_param)
+
+    // colon is the separator of variables before any constructor logic
+    // initializes the root node and then assigns it to the vector of nodes
+      : starting_search_directory{starting_dir_param},
+        tree_nodes{}
+      {
+        Struc::BPlusTreeNode<IndexDataType> root_node{};
+        root_node.page_number = 0;
+        root_node.type = Struc::NodeType::Leaf;
+        root_node.is_root = true;
+        root_node.filled_slots = 0;
+        root_node.parent_page_number = Struc::invalid_page_id;
+        root_node.next_leaf_id = Struc::invalid_page_id;
+        tree_nodes.push_back(root_node);
+        this->root_id = root_node.page_number;
+      }
+
+
+    uint32_t create_new_page(Struc::NodeType node_type)
+      {
+        uint32_t new_page_id = this->node_count;
+        if (node_type == Struc::NodeType::Leaf)
+          {
+            /* NEW LEAF NODE    */
+            Struc::BPlusTreeNode<IndexDataType> blank_leaf{
+            .page_number = new_page_id,
+            .type = Struc::NodeType::Leaf,
+            .filled_slots = 0,
+            .parent_page_number = Struc::invalid_page_id,
+            .next_leaf_id = Struc::invalid_page_id
+            //ADD TO VECTOR
+            };
+          }
+        else
+          {
+            /* NEW INTERNAL NODE   */
+            Struc::BPlusTreeNode<IndexDataType> blank_leaf{
+            .page_number = new_page_id,
+            .type = Struc::NodeType::Internal,
+            .filled_slots = 0,
+            .parent_page_number = Struc::invalid_page_id,
+            .next_leaf_id = Struc::invalid_page_id
+            //ADD TO VECTOR
+            };
+          }
+
+        this->node_count++;
+
+        return new_page_id;
+      }
+
+    //--------------------------------method 1. add_record() --------------------------------
+
+    Struc::BPlusTreeNode<IndexDataType> &return_page_by_id(
+      uint32_t page_number)
+      {
+        return this->tree_nodes.at(page_number);
+      }
+
+
+    Struc::SplitLeafOutput<IndexDataType> split_node
+    (
+      Struc::BPlusTreeNode<IndexDataType> &update_node
+    )
+      {
+        std::size_t middle_index;
+        Struc::IndexRecord<IndexDataType> sep{};
+
+
+        if (update_node.filled_slots % 2 == 0)
+          {
+            middle_index = update_node.filled_slots / 2;
+          }
+        else
+          {
+            middle_index = std::floor(update_node.filled_slots / 2);
+          }
+        std::cout << middle_index << std::endl;
+        sep = update_node.records.at(middle_index);
+
+        /* when there is no parent means we are the root*/
+        if (update_node.parent_page_number == Struc::invalid_page_id)
+          {
+            //create new root
+          }
+        /*   */
+      }
+
+
+    void add_record(const Struc::IndexRecord<IndexDataType> &record)
+      {
+        if (this->node_count == 1) /* root node ONLY logic */
+          {
+            Struc::BPlusTreeNode<IndexDataType> &update_node = return_page_by_id(this->root_id);
+
+            // if (update_node.filled_slots < update_node.ARRAY_SIZE)
+            /*
+             hard code smaller array size to test. When done, uncomment line above
+             */
+            if (update_node.filled_slots < 4)
+            //size is good
+              { // safe to add to array
+                update_node.add_record_to_node(record);
+                return;
+              }
+            else /* NEED To SPLIT NODE here and as a result make 2 new nodes,
+              if we are on the root node */
+              {
+                update_node.add_record_to_node(record); /*contains overflow record */
+                Struc::SplitLeafOutput<IndexDataType> split_output = split_node();
+              }
+          }
+        /* More than one node */
+        /*CONTINUE by SEARCHING LEAF here, since this
+        This block comes after the root node block
+        */
+      }
+    }; //class end
+  } //namspace end
 
 int main()
-    {
+  {
     // logic for inserting into a vector and maintaining sorted order
     std::vector<int> ff{4};
     // std::array< int32_t, 5>
@@ -269,15 +348,26 @@ int main()
     };
 
 
+    schema::FileRecord test_file_record_5{
+    .inode = 5,
+    .parent_inode = 1,
+    .created_timestamp = 548722,
+    .size_bytes = 8,
+    .mode = 322,
+    .type{"sql"},
+    .file_name = {"zriel_query_file.sql"}
+    };
+
     Struc::IndexRecord test_record_1{1, test_file_record_1.file_name};
     Struc::IndexRecord test_record_2{2, test_file_record_2.file_name};
     Struc::IndexRecord test_record_3{3, test_file_record_3.file_name};
     Struc::IndexRecord test_record_4{4, test_file_record_4.file_name};
-
-    std::cout << test_record_1.to_string() << std::endl;
-    std::cout << test_record_2.to_string() << std::endl;
-    std::cout << test_record_3.to_string() << std::endl;
-    std::cout << test_record_4.to_string() << std::endl;
+    Struc::IndexRecord test_record_5{5, test_file_record_5.file_name};
+    //
+    // std::cout << test_record_1.to_string() << std::endl;
+    // std::cout << test_record_2.to_string() << std::endl;
+    // std::cout << test_record_3.to_string() << std::endl;
+    // std::cout << test_record_4.to_string() << std::endl;
 
 
     // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
@@ -292,10 +382,9 @@ int main()
     // test_node.add_record_to_node(test_record_4);
 
 
-    std::cout << " \n\n\n\n\n\n\n -----------printing out test node below------------" << std::endl;
-
-
-
+    std::cout <<
+        " \n\n\n\n\n\n\n -----------printing out test node below------------" <<
+        std::endl;
 
 
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
@@ -303,6 +392,7 @@ int main()
     bptree.add_record(test_record_2);
     bptree.add_record(test_record_3);
     bptree.add_record(test_record_4);
+    bptree.add_record(test_record_5);
 
 
     std::cout << bptree.tree_nodes[0].to_string() << "\n";
@@ -338,4 +428,4 @@ int main()
 
     return 0;
     */
-    }
+  }

@@ -52,13 +52,15 @@ namespace Struc
     // my b+tree. This will include the immutable record_id from the
     // records DB and the field_value(of any type) that I am indexing on.
 
-    template<typename IndexDataType> // what data type is the index storing and ordering
+    template<typename IndexDataType>
+    // what data type is the index storing and ordering
     struct IndexRecord
         {
         uint32_t record_id;
         IndexDataType field_value;
 
-        static bool less_than_comparator(
+        static bool less_than_comparator
+        (
             const IndexRecord &lhs,
             const IndexRecord &rhs
         )
@@ -66,7 +68,8 @@ namespace Struc
             if (lhs.field_value != rhs.field_value)
                 {
                 return lhs.field_value < rhs.field_value;
-                } else
+                }
+            else
                 {
                 return lhs.record_id < rhs.record_id;
                 }
@@ -90,18 +93,29 @@ namespace Struc
         uint32_t node_count;
         };
 
+    template<typename IndexDataType>
+    struct SplitLeafOutput
+        {
+        uint32_t left_node_id;
+        uint32_t right_node_id;
+        IndexRecord<IndexDataType> separator;
+        };
 
-    template<typename IndexDataType> // what data type is the index storing and ordering
+
+    template<typename IndexDataType>
+    // what data type is the index storing and ordering
     struct BPlusTreeNode
         {
         uint32_t page_number;
         NodeType type;
-        static constexpr std::size_t ARRAY_SIZE = 4096 / sizeof(IndexRecord<IndexDataType>);
-        bool is_root = false;
         uint16_t filled_slots;
         uint32_t parent_page_number;
         uint32_t next_leaf_id;
-        std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records;
+
+        static constexpr std::size_t ARRAY_SIZE =
+                4096 / sizeof(IndexRecord<IndexDataType>);
+        std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records{};
+        bool is_root = false;
 
         // calculate node size
 
@@ -109,12 +123,16 @@ namespace Struc
             : filled_slots(0)
             {
             // constructor
-            std::cout << "this is the B+ Node tree constructor\n" << "\n \n" << std::endl;
+            std::cout << "this is the B+ Node tree constructor\n" << "\n \n" <<
+                    std::endl;
             }
 
         template<std::size_t N>
-        std::size_t get_array_index_without_checking_exists(IndexRecord<IndexDataType> &search_value,
-                                                            const std::array<IndexRecord<IndexDataType>, N> &keys)
+        std::size_t get_array_index_without_checking_exists
+        (
+            const IndexRecord<IndexDataType> &search_value,
+            const std::array<IndexRecord<IndexDataType>, N> &keys
+        )
             {
             auto index_iterator = std::lower_bound(
                 keys.begin(),
@@ -131,7 +149,10 @@ namespace Struc
             }
 
         // always inrcement the record count when adding a new record
-        void add_to_array(IndexRecord<IndexDataType> &record, std::size_t index_at)
+        void add_to_array
+        (
+            const IndexRecord<IndexDataType> &record, std::size_t index_at
+        )
             {
             std::move_backward(records.begin() + index_at,
                                records.begin() + filled_slots,
@@ -141,9 +162,10 @@ namespace Struc
             filled_slots++;
             }
 
-        void add_record_to_node(IndexRecord<IndexDataType> &record)
+        void add_record_to_node(const IndexRecord<IndexDataType>& record)
             {
-            std::size_t ind = get_array_index_without_checking_exists(record, records);
+            std::size_t ind = get_array_index_without_checking_exists(
+                record, records);
             add_to_array(record, ind);
             }
 

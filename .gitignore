@@ -1,6 +1,7 @@
 # MSC project
 /notes
 testnote.md
+/src/index/*dSYM*/*
 # Prerequisites
 *.d
 
@@ -9,7 +10,7 @@ testnote.md
 *.lo
 *.o
 *.obj
-
+*dSYM*
 # Precompiled Headers
 *.gch
 *.pch
