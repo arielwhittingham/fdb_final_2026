@@ -103,11 +103,10 @@ namespace Struc
 
     std::string to_string()
       {
-        std::stringstream ss;
-        ss << "\n " << left_node_id_original
-            << "\n " << right_node_id_new
-            << "\n " << separator_sent_up.to_string();
-        return ss.str();
+        return
+       "\n Split output\n " + std::to_string(left_node_id_original)
+            + "\n " + std::to_string(right_node_id_new)
+            + "\n " + separator_sent_up.to_string();
       }
     };
 
@@ -118,7 +117,7 @@ namespace Struc
     {
     uint32_t page_number;
     NodeType type;
-    uint16_t filled_slots;
+    uint16_t filled_slots = 0;
     uint32_t parent_page_number;
     uint32_t next_leaf_id;
 
@@ -128,14 +127,14 @@ namespace Struc
     bool is_root = false;
 
     // calculate node size
-
-    BPlusTreeNode()
-      : filled_slots(0)
-      {
-        // constructor
-        std::cout << "this is the B+ Node tree constructor\n" << "\n \n" <<
-            std::endl;
-      }
+    /*Don't need a constructor yet*/
+    // BPlusTreeNode()
+    //   {
+    //     // constructor
+    //
+    //     std::cout << "this is the B+ Node tree constructor\n" << "\n \n" <<
+    //         std::endl;
+    //   }
 
     template<std::size_t N>
     std::size_t get_array_index_without_checking_exists

@@ -256,11 +256,11 @@ If all elements in the range are smaller than the given value, it returns the en
         /* Split array here,update split_node with new array values
          and assign the other half to the  the new right node */
 
-        std::array<Struc::IndexRecord<IndexDataType>,update_node.ARRAY_SIZE>  left_new{};
+        std::array<Struc::IndexRecord<IndexDataType>, update_node.ARRAY_SIZE>  left_new{};
         std::array<Struc::IndexRecord<IndexDataType>, update_node.ARRAY_SIZE>  right_new{};
 
-        std::copy(update_node.begin(), update_node.begin() + middle_index, left_new.begin());
-        std::copy(update_node.begin() + middle_index, update_node.end(), right_new.begin());
+        std::copy(update_node.records.begin(), update_node.records.begin() + middle_index, left_new.begin());
+        std::copy(update_node.records.begin() + middle_index, update_node.records.end(), right_new.begin());
 
 
         update_node.records = left_new;
@@ -292,7 +292,7 @@ If all elements in the range are smaller than the given value, it returns the en
 
     void add_record(const Struc::IndexRecord<IndexDataType> &record)
       {
-        // Struc::SplitLeafOutput<IndexDataType> split_output;
+        Struc::SplitLeafOutput<IndexDataType> split_output;
         if (this->node_count == 1) /* root node ONLY logic */
           {
             Struc::BPlusTreeNode<IndexDataType> &update_node = return_page_by_id(this->root_id);
@@ -311,11 +311,13 @@ If all elements in the range are smaller than the given value, it returns the en
               if we are on the root node */
               {
                 update_node.add_record_to_node(record); /*contains overflow record */
-                // split_output = split_node(update_node);
+                split_output = split_node(update_node);
+
+                std::cout << "\n SPLIT OUTPUT HERE: " << split_output.to_string() << std::endl;
 
 
               }
-            // std::cout << split_output.to_string() << std::endl;
+
 
 
 
@@ -435,16 +437,21 @@ int main()
 
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
     bptree.add_record(test_record_1);
+    std::cout << "\n record 1 added\n" << std::endl;
     bptree.add_record(test_record_2);
+    std::cout << "\n record 2 added\n" << std::endl;
     bptree.add_record(test_record_3);
+    std::cout << "\n record 3 added\n" << std::endl;
     bptree.add_record(test_record_4);
+    std::cout << "\n record 4 added\n" << std::endl;
     bptree.add_record(test_record_5);
+    std::cout << "\n record 5 added\n" << std::endl;
 
 
-    for (auto &x :  bptree.tree_nodes)
-      {
-        std::cout << x.to_string() << "\n";
-      }
+    // for (auto &x :  bptree.tree_nodes)
+    //   {
+    //     std::cout << "\n PRINTING NODES IN MODIFIED B+TREE \n" << x.to_string() << "\n";
+    //   }
 
 
 
@@ -455,19 +462,19 @@ int main()
 
 
 
-
-    std::array<uint32_t, 14> left_original{16,21,30,41,50,62,72,89,90,101,110,120,130,135};
-    std::array<uint32_t, 14>  left_new{};
-    std::array<uint32_t, 14>  right_new{};
-
-    std::copy(left_original.begin(), left_original.begin() + 7, left_new.begin());
-
-    // auto x = abi::__cxa_demangle(typeid(split_iterator).name(), nullptr, nullptr, nullptr);
-
-    for (auto it : left_new)
-      {
-        std::cout << it << std::endl;
-      }
+    //
+    // std::array<uint32_t, 14> left_original{16,21,30,41,50,62,72,89,90,101,110,120,130,135};
+    // std::array<uint32_t, 14>  left_new{};
+    // std::array<uint32_t, 14>  right_new{};
+    //
+    // std::copy(left_original.begin(), left_original.begin() + 7, left_new.begin());
+    //
+    // // auto x = abi::__cxa_demangle(typeid(split_iterator).name(), nullptr, nullptr, nullptr);
+    //
+    // for (auto it : left_new)
+    //   {
+    //     std::cout << it << std::endl;
+    //   }
 
 
 
