@@ -292,6 +292,7 @@ If all elements in the range are smaller than the given value, it returns the en
 
     void add_record(const Struc::IndexRecord<IndexDataType> &record)
       {
+        // Struc::SplitLeafOutput<IndexDataType> split_output;
         if (this->node_count == 1) /* root node ONLY logic */
           {
             Struc::BPlusTreeNode<IndexDataType> &update_node = return_page_by_id(this->root_id);
@@ -310,8 +311,14 @@ If all elements in the range are smaller than the given value, it returns the en
               if we are on the root node */
               {
                 update_node.add_record_to_node(record); /*contains overflow record */
-                Struc::SplitLeafOutput<IndexDataType> split_output;// = split_node();
+                // split_output = split_node(update_node);
+
+
               }
+            // std::cout << split_output.to_string() << std::endl;
+
+
+
           }
         /* More than one node */
         /*CONTINUE by SEARCHING LEAF here, since this
