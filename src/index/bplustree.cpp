@@ -5,6 +5,7 @@
 #include "../schema/schema_objects.h"
 #include "structs_bplustree.h"
 #include <string>
+#include <cxxabi.h>
 #include <cstdint>
 #include <algorithm>
 #include <fstream>
@@ -252,6 +253,24 @@ If all elements in the range are smaller than the given value, it returns the en
         /* create new blank leaf node and return split output*/
         uint32_t new_right_leaf = create_new_page(Struc::NodeType::Leaf);
 
+        /* Split array here,update split_node with new array values
+         and assign the other half to the  the new right node */
+
+        std::array<Struc::IndexRecord<IndexDataType>,update_node.ARRAY_SIZE>  left_new{};
+        std::array<Struc::IndexRecord<IndexDataType>, update_node.ARRAY_SIZE>  right_new{};
+
+        std::copy(update_node.begin(), update_node.begin() + middle_index, left_new.begin());
+        std::copy(update_node.begin() + middle_index, update_node.end(), right_new.begin());
+
+
+        update_node.records = left_new;
+        update_node.is_root = false;
+        update_node.filled_slots = left_new.size();
+        update_node.parent_page_number  = Struc::invalid_page_id;
+        update_node.next_leaf_id = Struc::invalid_page_id;
+
+        this->tree_nodes[new_right_leaf].records = right_new;
+
         Struc::SplitLeafOutput<IndexDataType> split_return
         {
         .left_node_id_original = update_node.page_number,
@@ -279,7 +298,7 @@ If all elements in the range are smaller than the given value, it returns the en
 
             // if (update_node.filled_slots < update_node.ARRAY_SIZE)
             /*
-             hard code smaller array size to test. When done, uncomment line above
+             hardcode smaller array size to test. When done, uncomment line above
              */
             if (update_node.filled_slots < 4)
             //size is good
@@ -291,7 +310,7 @@ If all elements in the range are smaller than the given value, it returns the en
               if we are on the root node */
               {
                 update_node.add_record_to_node(record); /*contains overflow record */
-                Struc::SplitLeafOutput<IndexDataType> split_output = split_node();
+                Struc::SplitLeafOutput<IndexDataType> split_output;// = split_node();
               }
           }
         /* More than one node */
@@ -372,6 +391,9 @@ int main()
     .file_name = {"zriel_query_file.sql"}
     };
 
+
+    std::cout << "1 HERE" << std::endl;
+
     Struc::IndexRecord test_record_1{1, test_file_record_1.file_name};
     Struc::IndexRecord test_record_2{2, test_file_record_2.file_name};
     Struc::IndexRecord test_record_3{3, test_file_record_3.file_name};
@@ -389,11 +411,14 @@ int main()
     // test_node.type = Struc::NodeType::Leaf;
     // test_node.parent_page_number = Struc::invalid_page_id;
     // test_node.next_leaf_id = Struc::invalid_page_id;
-
+    //
+    //
+    //
     // test_node.add_record_to_node(test_record_1);
     // test_node.add_record_to_node(test_record_2);
     // test_node.add_record_to_node(test_record_3);
     // test_node.add_record_to_node(test_record_4);
+    // test_node.add_record_to_node(test_record_5);
 
 
     std::cout <<
@@ -409,7 +434,38 @@ int main()
     bptree.add_record(test_record_5);
 
 
-    std::cout << bptree.tree_nodes[0].to_string() << "\n";
+    for (auto &x :  bptree.tree_nodes)
+      {
+        std::cout << x.to_string() << "\n";
+      }
+
+
+
+
+    // std::cout << bptree.tree_nodes[0].to_string() << "\n";
+
+    auto& test_array = bptree.tree_nodes[0].records;
+
+
+
+
+    std::array<uint32_t, 14> left_original{16,21,30,41,50,62,72,89,90,101,110,120,130,135};
+    std::array<uint32_t, 14>  left_new{};
+    std::array<uint32_t, 14>  right_new{};
+
+    std::copy(left_original.begin(), left_original.begin() + 7, left_new.begin());
+
+    // auto x = abi::__cxa_demangle(typeid(split_iterator).name(), nullptr, nullptr, nullptr);
+
+    for (auto it : left_new)
+      {
+        std::cout << it << std::endl;
+      }
+
+
+
+
+
 
     // int d = Index::get_array_index_without_checking_exists(test_record_1);
     // Index::MemoryPage p;
