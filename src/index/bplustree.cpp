@@ -237,6 +237,16 @@ If all elements in the range are smaller than the given value, it returns the en
       {
         std::size_t middle_index;
         Struc::IndexRecord<IndexDataType> separator_record{};
+        const auto& source_array = update_node.records;
+
+        // for (auto& x : source_array)
+        //   {
+        //
+        //     std::cout << "\n SOURCE ARRAY PRINT OUT  " << x.to_string()  << std::endl;
+        //
+        //   }
+
+
 
 
         if (update_node.filled_slots % 2 == 0)
@@ -259,8 +269,20 @@ If all elements in the range are smaller than the given value, it returns the en
         std::array<Struc::IndexRecord<IndexDataType>, update_node.ARRAY_SIZE>  left_new{};
         std::array<Struc::IndexRecord<IndexDataType>, update_node.ARRAY_SIZE>  right_new{};
 
-        std::copy(update_node.records.begin(), update_node.records.begin() + middle_index, left_new.begin());
-        std::copy(update_node.records.begin() + middle_index, update_node.records.end(), right_new.begin());
+
+        std::cout << "\n array size: " << update_node.ARRAY_SIZE << std::endl;
+
+        // std::cout << left_new.to_string()  << std::endl;
+
+        std::copy(source_array.begin(), source_array.begin() + middle_index, left_new.begin());
+        std::copy(source_array.begin() + middle_index, source_array.end(), right_new.begin());
+
+        // for (auto& x : left_new)
+        //   {
+        //
+        //     std::cout << "\n SOURCE ARRAY PRINT OUT  " << x.to_string()  << std::endl;
+        //
+        //   }
 
 
         update_node.records = left_new;
@@ -458,7 +480,7 @@ int main()
 
     // std::cout << bptree.tree_nodes[0].to_string() << "\n";
 
-    auto& test_array = bptree.tree_nodes[0].records;
+    // auto& test_array = bptree.tree_nodes[0].records;
 
 
 
@@ -489,7 +511,7 @@ int main()
     // Index::BPlusTreeManager testtree{"test_dir"};
     // testtree.add_record(testrecord_1);
 
-    Index::BufferManager bufftest;
+    // Index::BufferManager bufftest;
 
     // auto rcount = bufftest.write_record_to_file();
 
