@@ -235,19 +235,10 @@ If all elements in the range are smaller than the given value, it returns the en
     Struc::SplitLeafOutput<IndexDataType> split_node(Struc::BPlusTreeNode<IndexDataType>
       &update_node)
       {
-        std::size_t middle_index;
+        std::size_t middle_index{};
         Struc::IndexRecord<IndexDataType> separator_record{};
         const auto& source_array = update_node.records;
-
-        // for (auto& x : source_array)
-        //   {
-        //
-        //     std::cout << "\n SOURCE ARRAY PRINT OUT  " << x.to_string()  << std::endl;
-        //
-        //   }
-
-
-
+        constexpr size_t update_array_size =  Struc::BPlusTreeNode<IndexDataType>::ARRAY_SIZE;
 
         if (update_node.filled_slots % 2 == 0)
           {
@@ -258,7 +249,7 @@ If all elements in the range are smaller than the given value, it returns the en
             middle_index = std::floor(update_node.filled_slots / 2);
           }
         std::cout << middle_index << std::endl;
-        separator_record = update_node.records.at(middle_index);
+        separator_record = source_array.at(middle_index);
 
         /* create new blank leaf node and return split output*/
         uint32_t new_right_leaf = create_new_page(Struc::NodeType::Leaf);
@@ -266,32 +257,40 @@ If all elements in the range are smaller than the given value, it returns the en
         /* Split array here,update split_node with new array values
          and assign the other half to the  the new right node */
 
-        std::array<Struc::IndexRecord<IndexDataType>, update_node.ARRAY_SIZE>  left_new{};
-        std::array<Struc::IndexRecord<IndexDataType>, update_node.ARRAY_SIZE>  right_new{};
-
-
-        std::cout << "\n array size: " << update_node.ARRAY_SIZE << std::endl;
+        std::array<Struc::IndexRecord<IndexDataType>, update_array_size>  left_new{};
+        std::array<Struc::IndexRecord<IndexDataType>, update_array_size>  right_new{};
 
         // std::cout << left_new.to_string()  << std::endl;
 
         std::copy(source_array.begin(), source_array.begin() + middle_index, left_new.begin());
         std::copy(source_array.begin() + middle_index, source_array.end(), right_new.begin());
 
-        // for (auto& x : left_new)
-        //   {
-        //
-        //     std::cout << "\n SOURCE ARRAY PRINT OUT  " << x.to_string()  << std::endl;
-        //
-        //   }
-
+        size_t new_right_filled = update_node.filled_slots - middle_index;
 
         update_node.records = left_new;
         update_node.is_root = false;
-        update_node.filled_slots = left_new.size();
+        update_node.filled_slots = middle_index;
         update_node.parent_page_number  = Struc::invalid_page_id;
         update_node.next_leaf_id = Struc::invalid_page_id;
 
         this->tree_nodes[new_right_leaf].records = right_new;
+        this->tree_nodes[new_right_leaf].filled_slots = new_right_filled;
+
+
+        for (auto& x : update_node.records)
+          {
+
+            std::cout << "\n LEFT ARRAY PRINT OUT:  " << x.to_string()  << std::endl;
+
+          }
+
+
+        for (auto& x : this->tree_nodes[new_right_leaf].records)
+          {
+
+            std::cout << "\n RIGHT ARRAY PRINT OUT:  " << x.to_string()  << std::endl;
+
+          }
 
         Struc::SplitLeafOutput<IndexDataType> split_return
         {
@@ -324,10 +323,9 @@ If all elements in the range are smaller than the given value, it returns the en
              hardcode smaller array size to test. When done, uncomment line above
              */
             if (update_node.filled_slots < 4)
-            //size is good
+
               { // safe to add to array
                 update_node.add_record_to_node(record);
-                return;
               }
             else /* NEED To SPLIT NODE here and as a result make 2 new nodes,
               if we are on the root node */
@@ -534,4 +532,5 @@ int main()
 
     return 0;
     */
+    return 0;
   }
