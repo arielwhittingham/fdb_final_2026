@@ -80,9 +80,10 @@ namespace Struc
     std::string to_string() const
       {
         return
-            "\n record_id: " +
+            " is this running? "
+            " record_id: " +
             std::to_string(record_id) +
-            "\n valaue: " +
+            " valaue: " +
             field_value.data();
       }
     };
@@ -104,9 +105,9 @@ namespace Struc
     std::string to_string()
       {
         return
-       "\n Split output\n " + std::to_string(left_node_id_original)
-            + "\n " + std::to_string(right_node_id_new)
-            + "\n " + separator_sent_up.to_string();
+            "\n Split output node id: " + std::to_string(left_node_id_original)
+            + "\n right new node id: " + std::to_string(right_node_id_new)
+            + "\n separator record: " + separator_sent_up.to_string();
       }
     };
 
@@ -121,8 +122,9 @@ namespace Struc
     uint32_t parent_page_number;
     uint32_t next_leaf_id;
 
-    static constexpr std::size_t ARRAY_SIZE =
-        4096 / sizeof(IndexRecord<IndexDataType>);
+    // static constexpr std::size_t ARRAY_SIZE =
+    //     4096 / sizeof(IndexRecord<IndexDataType>);
+    static constexpr std::size_t ARRAY_SIZE = 4;
     std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records{};
     bool is_root = false;
 
@@ -150,11 +152,18 @@ namespace Struc
           IndexRecord<IndexDataType>::less_than_comparator
         );
 
-        auto index_value = std::distance(keys.begin(), index_iterator);
+
+        std::size_t index_value = static_cast<std::size_t>(
+          std::distance(keys.begin(), index_iterator)
+        );
+
+        std::cout << " weird index first: " << index_value << std::endl;
 
         // std::cout << " search_value test: " << search_value.to_string() << "\n";
 
-        return index_value;
+        if (index_value == 0)
+          { return 0;}
+        else return index_value - 1;
       }
 
     // always inrcement the record count when adding a new record
@@ -162,20 +171,37 @@ namespace Struc
     (
       const IndexRecord<IndexDataType> &record, std::size_t index_at
     )
+    // try
+    //   {
       {
+        std::cout << "index checker did it make it? " << std::endl;
+
         std::move_backward(
-          records.begin() + index_at,
-          records.begin() + filled_slots,
-          records.begin() + filled_slots + 1
+          this->records.begin() + index_at,
+          this->records.begin() + filled_slots,
+          this->records.begin() + filled_slots + 1
         );
-        records[index_at] = record;
-        filled_slots++;
+        std::cout << "index checker did it make it? " << std::endl;
+        std::cout << "what is the inex here: " << index_at << std::endl;
+
+
+        this->records.at(index_at) = record;
+        std::cout << " WE GONNA GET HERE? : " << index_at << std::endl;
+        ++this->filled_slots;
+        std::cout << "\n Filled: " << filled_slots << std::endl;
+        // std::cout << " Index At: " << records.at(index_at).to_string() << std::endl;
+        std::cout << "\n record being added: " << record.to_string() << std::endl;
       }
+
+    // }
+    // catch (...)
 
     void add_record_to_node(const IndexRecord<IndexDataType> &record)
       {
         std::size_t ind = get_array_index_without_checking_exists(
-          record, records);
+          record, this->records);
+        std::cout << "WEIRD INDEX: " << ind << std::endl;
+
         add_to_array(record, ind);
       }
 

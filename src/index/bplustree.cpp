@@ -158,10 +158,11 @@ If all elements in the range are smaller than the given value, it returns the en
     {
   public:
     const std::string &starting_search_directory;
+    static constexpr uint32_t overflow_record_cushion = 2;
     uint32_t root_id{};
     static constexpr std::size_t ARRAY_SIZE = std::floor(
                                                 Struc::PAGE_SIZE_IN_BYTES / sizeof(
-                                                  Struc::IndexRecord<IndexDataType>)) - 1;
+                                                  Struc::IndexRecord<IndexDataType>)) - overflow_record_cushion;
     std::vector<Struc::BPlusTreeNode<IndexDataType> > tree_nodes;
     uint32_t node_count = 1;
 
@@ -248,11 +249,13 @@ If all elements in the range are smaller than the given value, it returns the en
           {
             middle_index = std::floor(update_node.filled_slots / 2);
           }
-        std::cout << middle_index << std::endl;
+        std::cout << "Middle Index: " << middle_index << std::endl;
         separator_record = source_array.at(middle_index);
 
         /* create new blank leaf node and return split output*/
         uint32_t new_right_leaf = create_new_page(Struc::NodeType::Leaf);
+
+        std::cout << "New right leaf ID: " << new_right_leaf << std::endl;
 
         /* Split array here,update split_node with new array values
          and assign the other half to the  the new right node */
@@ -260,7 +263,7 @@ If all elements in the range are smaller than the given value, it returns the en
         std::array<Struc::IndexRecord<IndexDataType>, update_array_size>  left_new{};
         std::array<Struc::IndexRecord<IndexDataType>, update_array_size>  right_new{};
 
-        // std::cout << left_new.to_string()  << std::endl;
+
 
         std::copy(source_array.begin(), source_array.begin() + middle_index, left_new.begin());
         std::copy(source_array.begin() + middle_index, source_array.end(), right_new.begin());
@@ -318,35 +321,38 @@ If all elements in the range are smaller than the given value, it returns the en
           {
             Struc::BPlusTreeNode<IndexDataType> &update_node = return_page_by_id(this->root_id);
 
-            // if (update_node.filled_slots < update_node.ARRAY_SIZE)
             /*
              hardcode smaller array size to test. When done, uncomment line above
              */
-            if (update_node.filled_slots < 4)
-
+            // if (update_node.filled_slots < 4)
+              if (update_node.filled_slots < update_node.ARRAY_SIZE)
               { // safe to add to array
                 update_node.add_record_to_node(record);
               }
-            else /* NEED To SPLIT NODE here and as a result make 2 new nodes,
+             /* NEED To SPLIT NODE here and as a result make 2 new nodes,
               if we are on the root node */
-              {
+              else {
+                std::cout << " \n TRAP 1 \n "  << std::endl;
+
                 update_node.add_record_to_node(record); /*contains overflow record */
+                  std::cout << " \n TRAP 2 \n "  << std::endl;
                 split_output = split_node(update_node);
+                  std::cout << " \n TRAP 3 \n "  << std::endl;
 
                 std::cout << "\n SPLIT OUTPUT HERE: " << split_output.to_string() << std::endl;
 
-
               }
 
-
-
-
+          }
+        else
+          {
+            std::cout << " Does this run?\n";
           }
         /* More than one node */
         /*CONTINUE by SEARCHING LEAF here, since this
         This block comes after the root node block
         */
-      }
+      } //method end
     }; //class end
   } //namspace end
 
@@ -358,14 +364,12 @@ int main()
     ff.push_back(6);
     ff.push_back(7);
     ff.push_back(9);
-    std::cout << ff[3] << "\n";
     int tester{5};
 
     std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
 
     int a = Index::element_exists(4, test);
 
-    std::cout << "exists: " << a << "\n";
 
 
     schema::FileRecord test_file_record_1{
@@ -421,13 +425,22 @@ int main()
     };
 
 
-    std::cout << "1 HERE" << std::endl;
 
     Struc::IndexRecord test_record_1{1, test_file_record_1.file_name};
     Struc::IndexRecord test_record_2{2, test_file_record_2.file_name};
     Struc::IndexRecord test_record_3{3, test_file_record_3.file_name};
     Struc::IndexRecord test_record_4{4, test_file_record_4.file_name};
     Struc::IndexRecord test_record_5{5, test_file_record_5.file_name};
+
+    // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
+    // test_node.add_record_to_node(test_record_1);
+    // test_node.add_record_to_node(test_record_2);
+    // test_node.add_record_to_node(test_record_3);
+    // test_node.add_record_to_node(test_record_4);
+    // test_node.add_record_to_node(test_record_5);
+
+
+
     //
     // std::cout << test_record_1.to_string() << std::endl;
     // std::cout << test_record_2.to_string() << std::endl;
@@ -454,6 +467,8 @@ int main()
         " \n\n\n\n\n\n\n -----------printing out test node below------------" <<
         std::endl;
 
+    // Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
+    // bptree.create_new_page(Struc::NodeType::Leaf);
 
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
     bptree.add_record(test_record_1);
