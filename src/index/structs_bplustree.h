@@ -107,7 +107,8 @@ namespace Struc
         return
             "\n Split output node id: " + std::to_string(left_node_id_original)
             + "\n right new node id: " + std::to_string(right_node_id_new)
-            + "\n separator record: " + separator_sent_up.to_string();
+            + "\n separator record: " + separator_sent_up.to_string()
+        ;
       }
     };
 

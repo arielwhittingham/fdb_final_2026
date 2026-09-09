@@ -234,23 +234,32 @@ If all elements in the range are smaller than the given value, it returns the en
 
 
     Struc::SplitLeafOutput<IndexDataType> split_node(Struc::BPlusTreeNode<IndexDataType>
-      &update_node)
+      &update_node, Struc::IndexRecord<IndexDataType>& overflow_rec)
       {
         std::size_t middle_index{};
+        constexpr size_t added_slot{1};
         Struc::IndexRecord<IndexDataType> separator_record{};
+        std::array<Struc::IndexRecord<IndexDataType>, ARRAY_SIZE + added_slot> temp_array;
         const auto& source_array = update_node.records;
         constexpr size_t update_array_size =  Struc::BPlusTreeNode<IndexDataType>::ARRAY_SIZE;
 
+        std::copy_n(
+        source_array.begin(),
+        update_node.filled_slots,
+        temp_array.begin()
+    );
+        temp_array[update_node.filled_slots] = overflow_rec;
+
         if (update_node.filled_slots % 2 == 0)
           {
-            middle_index = update_node.filled_slots / 2;
+            middle_index = update_node.filled_slots + 1 / 2;
           }
         else
           {
-            middle_index = std::floor(update_node.filled_slots / 2);
+            middle_index = std::floor(update_node.filled_slots + 1 / 2);
           }
         std::cout << "Middle Index: " << middle_index << std::endl;
-        separator_record = source_array.at(middle_index);
+        separator_record = temp_array.at(middle_index);
 
         /* create new blank leaf node and return split output*/
         uint32_t new_right_leaf = create_new_page(Struc::NodeType::Leaf);
@@ -265,8 +274,8 @@ If all elements in the range are smaller than the given value, it returns the en
 
 
 
-        std::copy(source_array.begin(), source_array.begin() + middle_index, left_new.begin());
-        std::copy(source_array.begin() + middle_index, source_array.end(), right_new.begin());
+        std::copy(temp_array.begin(), temp_array.begin() + middle_index, left_new.begin());
+        std::copy(temp_array.begin() + middle_index, temp_array.end(), right_new.begin());
 
         size_t new_right_filled = update_node.filled_slots - middle_index;
 
@@ -334,9 +343,9 @@ If all elements in the range are smaller than the given value, it returns the en
               else {
                 std::cout << " \n TRAP 1 \n "  << std::endl;
 
-                update_node.add_record_to_node(record); /*contains overflow record */
+                // update_node.add_record_to_node(record); /*contains overflow record */
                   std::cout << " \n TRAP 2 \n "  << std::endl;
-                split_output = split_node(update_node);
+                split_output = split_node(update_node, record);
                   std::cout << " \n TRAP 3 \n "  << std::endl;
 
                 std::cout << "\n SPLIT OUTPUT HERE: " << split_output.to_string() << std::endl;
