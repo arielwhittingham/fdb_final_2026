@@ -33,6 +33,9 @@ namespace Index
 
   //-----------------HELPER Non-Member Methods ----------------
 
+
+
+
   template<std::size_t N>
   bool element_exists(uint32_t search_value, std::array<uint32_t, N> &search_array)
     {
@@ -49,6 +52,12 @@ namespace Index
     }
 
 
+
+
+
+
+
+
   /*
 
 💡 Core ConceptThink of std::lower_bound as finding the earliest position where
@@ -63,6 +72,12 @@ If all elements in the range are smaller than the given value, it returns the en
 */
 
   //------------------------Record Management------------------------------------------------
+
+
+
+
+
+
 
   class BufferManager
     {
@@ -115,11 +130,26 @@ If all elements in the range are smaller than the given value, it returns the en
           }
       }
 
+
+
+
+
+
+
+
     uint32_t create_new_record_id()
       {
         this->record_count++;
         return this->record_count;
       }
+
+
+
+
+
+
+
+
 
 
     uint32_t write_record_to_file(Struc::StorageRecord &record)
@@ -146,6 +176,16 @@ If all elements in the range are smaller than the given value, it returns the en
           std::ios::binary | std::ios::in | std::ios::out);
       }
     };
+
+
+
+
+
+
+
+
+
+
 
   //------------------------B+Tree Management------------------------------------------------
 
@@ -188,6 +228,12 @@ If all elements in the range are smaller than the given value, it returns the en
       }
 
 
+
+
+
+
+
+
     uint32_t create_new_page(Struc::NodeType node_type)
       {
         uint32_t new_page_id = this->node_count;
@@ -224,7 +270,13 @@ If all elements in the range are smaller than the given value, it returns the en
         return new_page_id;
       }
 
-    //--------------------------------method 1. add_record() --------------------------------
+
+
+
+
+
+
+
 
     Struc::BPlusTreeNode<IndexDataType> &return_page_by_id(
       uint32_t page_number)
@@ -233,15 +285,23 @@ If all elements in the range are smaller than the given value, it returns the en
       }
 
 
-    Struc::SplitLeafOutput<IndexDataType> split_node(Struc::BPlusTreeNode<IndexDataType>
-      &update_node, Struc::IndexRecord<IndexDataType>& overflow_rec)
+
+
+
+
+
+
+
+
+    Struc::SplitLeafOutput<IndexDataType> split_node(uint32_t update_node_id, const Struc::IndexRecord<IndexDataType>& overflow_rec)
       {
         std::size_t middle_index{};
         constexpr size_t added_slot{1};
         Struc::IndexRecord<IndexDataType> separator_record{};
-        std::array<Struc::IndexRecord<IndexDataType>, ARRAY_SIZE + added_slot> temp_array;
+        std::array<Struc::IndexRecord<IndexDataType>, Struc::BPlusTreeNode<IndexDataType>::ARRAY_SIZE + added_slot> temp_array;
+        auto& update_node = this->tree_nodes.at(update_node_id);
         const auto& source_array = update_node.records;
-        constexpr size_t update_array_size =  Struc::BPlusTreeNode<IndexDataType>::ARRAY_SIZE;
+        constexpr size_t update_array_size =  Struc::BPlusTreeNode<IndexDataType>::ARRAY_SIZE + 1;
 
         std::copy_n(
         source_array.begin(),
@@ -250,63 +310,63 @@ If all elements in the range are smaller than the given value, it returns the en
     );
         temp_array[update_node.filled_slots] = overflow_rec;
 
-        if (update_node.filled_slots % 2 == 0)
+        if (update_array_size % 2 == 0)
           {
-            middle_index = update_node.filled_slots + 1 / 2;
+            middle_index = update_array_size / 2;
           }
         else
           {
-            middle_index = std::floor(update_node.filled_slots + 1 / 2);
+            middle_index = std::floor(update_array_size / 2);
           }
         std::cout << "Middle Index: " << middle_index << std::endl;
         separator_record = temp_array.at(middle_index);
 
-        /* create new blank leaf node and return split output*/
+
         uint32_t new_right_leaf = create_new_page(Struc::NodeType::Leaf);
+        auto& update_node_reaquire = this->tree_nodes.at(update_node_id);
 
         std::cout << "New right leaf ID: " << new_right_leaf << std::endl;
 
         /* Split array here,update split_node with new array values
          and assign the other half to the  the new right node */
 
-        std::array<Struc::IndexRecord<IndexDataType>, update_array_size>  left_new{};
-        std::array<Struc::IndexRecord<IndexDataType>, update_array_size>  right_new{};
+        std::array<Struc::IndexRecord<IndexDataType>, Struc::BPlusTreeNode<IndexDataType>::ARRAY_SIZE>  left_new{};
+        std::array<Struc::IndexRecord<IndexDataType>, Struc::BPlusTreeNode<IndexDataType>::ARRAY_SIZE>  right_new{};
 
 
 
         std::copy(temp_array.begin(), temp_array.begin() + middle_index, left_new.begin());
         std::copy(temp_array.begin() + middle_index, temp_array.end(), right_new.begin());
 
-        size_t new_right_filled = update_node.filled_slots - middle_index;
+        size_t new_right_filled = update_node_reaquire.filled_slots - middle_index;
 
-        update_node.records = left_new;
-        update_node.is_root = false;
-        update_node.filled_slots = middle_index;
-        update_node.parent_page_number  = Struc::invalid_page_id;
-        update_node.next_leaf_id = Struc::invalid_page_id;
+        std::copy_n(
+        left_new.begin(),
+        middle_index,
+        update_node_reaquire.records.begin());
+
+        update_node_reaquire.is_root = false;
+        update_node_reaquire.filled_slots = middle_index;
+        update_node_reaquire.parent_page_number  = Struc::invalid_page_id;
+        update_node_reaquire.next_leaf_id = Struc::invalid_page_id;
 
         this->tree_nodes[new_right_leaf].records = right_new;
         this->tree_nodes[new_right_leaf].filled_slots = new_right_filled;
 
 
-        for (auto& x : update_node.records)
+        for (auto& x : update_node_reaquire.records)
           {
-
             std::cout << "\n LEFT ARRAY PRINT OUT:  " << x.to_string()  << std::endl;
-
           }
-
 
         for (auto& x : this->tree_nodes[new_right_leaf].records)
           {
-
             std::cout << "\n RIGHT ARRAY PRINT OUT:  " << x.to_string()  << std::endl;
-
           }
 
         Struc::SplitLeafOutput<IndexDataType> split_return
         {
-        .left_node_id_original = update_node.page_number,
+        .left_node_id_original = update_node_reaquire.page_number,
         .right_node_id_new = new_right_leaf,
         .separator_sent_up = separator_record
         };
@@ -323,6 +383,15 @@ If all elements in the range are smaller than the given value, it returns the en
       }
 
 
+
+
+
+
+
+
+
+
+
     void add_record(const Struc::IndexRecord<IndexDataType> &record)
       {
         Struc::SplitLeafOutput<IndexDataType> split_output;
@@ -330,22 +399,16 @@ If all elements in the range are smaller than the given value, it returns the en
           {
             Struc::BPlusTreeNode<IndexDataType> &update_node = return_page_by_id(this->root_id);
 
-            /*
-             hardcode smaller array size to test. When done, uncomment line above
-             */
-            // if (update_node.filled_slots < 4)
               if (update_node.filled_slots < update_node.ARRAY_SIZE)
-              { // safe to add to array
-                update_node.add_record_to_node(record);
+              {
+                update_node.add_record_to_node(record); // safe to add to array
               }
              /* NEED To SPLIT NODE here and as a result make 2 new nodes,
               if we are on the root node */
               else {
-                std::cout << " \n TRAP 1 \n "  << std::endl;
 
                 // update_node.add_record_to_node(record); /*contains overflow record */
-                  std::cout << " \n TRAP 2 \n "  << std::endl;
-                split_output = split_node(update_node, record);
+                split_output = split_node(this->root_id, record);
                   std::cout << " \n TRAP 3 \n "  << std::endl;
 
                 std::cout << "\n SPLIT OUTPUT HERE: " << split_output.to_string() << std::endl;
@@ -364,6 +427,19 @@ If all elements in the range are smaller than the given value, it returns the en
       } //method end
     }; //class end
   } //namspace end
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 int main()
   {
@@ -448,23 +524,17 @@ int main()
     // test_node.add_record_to_node(test_record_4);
     // test_node.add_record_to_node(test_record_5);
 
-
-
-    //
     // std::cout << test_record_1.to_string() << std::endl;
     // std::cout << test_record_2.to_string() << std::endl;
     // std::cout << test_record_3.to_string() << std::endl;
     // std::cout << test_record_4.to_string() << std::endl;
-
 
     // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
     // test_node.page_number = 1;
     // test_node.type = Struc::NodeType::Leaf;
     // test_node.parent_page_number = Struc::invalid_page_id;
     // test_node.next_leaf_id = Struc::invalid_page_id;
-    //
-    //
-    //
+
     // test_node.add_record_to_node(test_record_1);
     // test_node.add_record_to_node(test_record_2);
     // test_node.add_record_to_node(test_record_3);
@@ -475,9 +545,6 @@ int main()
     std::cout <<
         " \n\n\n\n\n\n\n -----------printing out test node below------------" <<
         std::endl;
-
-    // Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
-    // bptree.create_new_page(Struc::NodeType::Leaf);
 
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
     bptree.add_record(test_record_1);
@@ -492,20 +559,6 @@ int main()
     std::cout << "\n record 5 added\n" << std::endl;
 
 
-    // for (auto &x :  bptree.tree_nodes)
-    //   {
-    //     std::cout << "\n PRINTING NODES IN MODIFIED B+TREE \n" << x.to_string() << "\n";
-    //   }
-
-
-
-
-    // std::cout << bptree.tree_nodes[0].to_string() << "\n";
-
-    // auto& test_array = bptree.tree_nodes[0].records;
-
-
-
     //
     // std::array<uint32_t, 14> left_original{16,21,30,41,50,62,72,89,90,101,110,120,130,135};
     // std::array<uint32_t, 14>  left_new{};
@@ -514,14 +567,6 @@ int main()
     // std::copy(left_original.begin(), left_original.begin() + 7, left_new.begin());
     //
     // // auto x = abi::__cxa_demangle(typeid(split_iterator).name(), nullptr, nullptr, nullptr);
-    //
-    // for (auto it : left_new)
-    //   {
-    //     std::cout << it << std::endl;
-    //   }
-
-
-
 
 
 
