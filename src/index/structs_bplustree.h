@@ -15,7 +15,8 @@ namespace Struc
   enum class NodeType
     {
     Leaf,
-    Internal
+    Internal,
+    Root
     };
 
   extern const int PAGE_SIZE_IN_BYTES = 4096;
@@ -52,7 +53,7 @@ namespace Struc
   // container for any record I am indexing on in
   // my b+tree. This will include the immutable record_id from the
   // records DB and the field_value(of any type) that I am indexing on.
-
+// struc index_record
   template<typename IndexDataType>
   // what data type is the index storing and ordering
   struct IndexRecord
@@ -80,7 +81,6 @@ namespace Struc
     std::string to_string() const
       {
         return
-            " is this running? "
             " record_id: " +
             std::to_string(record_id) +
             " valaue: " +
@@ -94,9 +94,9 @@ namespace Struc
     uint32_t root_id;
     uint32_t node_count;
     };
-
+  // struc SplitOutput
   template<typename IndexDataType>
-  struct SplitLeafOutput
+  struct SplitOutput
     {
     uint32_t left_node_id_original;
     uint32_t right_node_id_new;
@@ -107,12 +107,11 @@ namespace Struc
         return
             "\n Split output node id: " + std::to_string(left_node_id_original)
             + "\n right new node id: " + std::to_string(right_node_id_new)
-            + "\n separator record: " + separator_sent_up.to_string()
-        ;
+            + "\n separator record: " + separator_sent_up.to_string();
       }
     };
 
-
+// struc BPlusTreeNode
   template<typename IndexDataType>
   // what data type is the index storing and ordering
   struct BPlusTreeNode
@@ -120,23 +119,26 @@ namespace Struc
     uint32_t page_number;
     NodeType type;
     uint16_t filled_slots = 0;
-    uint32_t parent_page_number;
-    uint32_t next_leaf_id;
+    uint32_t parent_page_number = invalid_page_id;
+    uint32_t next_leaf_id = invalid_page_id;
 
     // static constexpr std::size_t ARRAY_SIZE =
     //     4096 / sizeof(IndexRecord<IndexDataType>);
-    static constexpr std::size_t ARRAY_SIZE = 4;
+    static constexpr std::size_t asize_temp = 2;
+    static constexpr uint32_t overflow_record_cushion = 0;
+    // static constexpr std::size_t ARRAY_SIZE = std::floor(
+    //                                             PAGE_SIZE_IN_BYTES / sizeof(
+    //                                               IndexRecord<IndexDataType>)) -
+    //                                           overflow_record_cushion;
+    static constexpr std::size_t ARRAY_SIZE = asize_temp - overflow_record_cushion;
     std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records{};
     bool is_root = false;
 
-    // calculate node size
+    std::array<uint32_t, ARRAY_SIZE + 1> child_page_ids{};
+
     /*Don't need a constructor yet*/
     // BPlusTreeNode()
     //   {
-    //     // constructor
-    //
-    //     std::cout << "this is the B+ Node tree constructor\n" << "\n \n" <<
-    //         std::endl;
     //   }
 
     template<std::size_t N>
@@ -158,13 +160,13 @@ namespace Struc
           std::distance(keys.begin(), index_iterator)
         );
 
-        std::cout << " weird index first: " << index_value << std::endl;
-
         // std::cout << " search_value test: " << search_value.to_string() << "\n";
 
         if (index_value == 0)
-          { return 0;}
-        else return index_value - 1;
+          {
+            return 0;
+          }
+        else return index_value;
       }
 
     // always inrcement the record count when adding a new record
@@ -175,23 +177,19 @@ namespace Struc
     // try
     //   {
       {
-        std::cout << "index checker did it make it? " << std::endl;
 
         std::move_backward(
           this->records.begin() + index_at,
           this->records.begin() + filled_slots,
           this->records.begin() + filled_slots + 1
         );
-        std::cout << "index checker did it make it? " << std::endl;
-        std::cout << "what is the inex here: " << index_at << std::endl;
-
 
         this->records.at(index_at) = record;
-        std::cout << " WE GONNA GET HERE? : " << index_at << std::endl;
+
         ++this->filled_slots;
-        std::cout << "\n Filled: " << filled_slots << std::endl;
+        // std::cout << "\n Filled: " << filled_slots << std::endl;
         // std::cout << " Index At: " << records.at(index_at).to_string() << std::endl;
-        std::cout << "\n record being added: " << record.to_string() << std::endl;
+        // std::cout << "\n record being added: " << record.to_string() << std::endl;
       }
 
     // }
@@ -201,7 +199,6 @@ namespace Struc
       {
         std::size_t ind = get_array_index_without_checking_exists(
           record, this->records);
-        std::cout << "WEIRD INDEX: " << ind << std::endl;
 
         add_to_array(record, ind);
       }
