@@ -232,7 +232,8 @@ If all elements in the range are smaller than the given value, it returns the en
     // func get_child
     std::size_t get_child_index_from_child_id(uint32_t child_id, uint32_t search_node_id)
     const
-      { std::size_t x = 0;
+      {
+        std::size_t x = 0;
         for (; x <= this->tree_nodes[search_node_id].filled_slots; x++)
           {
             if (this->tree_nodes[search_node_id].child_page_ids[x] == child_id)
@@ -240,7 +241,12 @@ If all elements in the range are smaller than the given value, it returns the en
                 return x;
               }
           }
-        return static_cast<size_t>(-1); //this represents an invalid return value
+        /* throw a runtime error instead of returning a bad key
+         to prevent the error from occuring farther downstream */
+        throw std::runtime_error(
+          " \n This tree node: " + this->tree_nodes.at(search_node_id).to_string() +
+          " with node id: " + std::to_string(search_node_id)
+          + " does not contain child id: " + std::to_string(child_id));
       }
 
     // func create_new_page
@@ -291,12 +297,13 @@ a split output
         uint32_t new_root_id = create_new_page(Struc::NodeType::Internal); {
           //create a separate scope
           Node &new_root_node = return_page_by_id(new_root_id);
-          new_root_node.type = Struc::NodeType::Internal;
-          new_root_node.filled_slots = 1;
-          new_root_node.records[0] = split_result.separator_sent_up;
-          new_root_node.child_page_ids[0] = split_result.left_node_id_original;
-          new_root_node.child_page_ids[1] = split_result.right_node_id_new;
-          new_root_node.parent_page_number = Struc::invalid_page_id;
+          this->tree_nodes.at(new_root_id).type = Struc::NodeType::Internal;
+          this->tree_nodes.at(new_root_id).is_root = true;
+          this->tree_nodes.at(new_root_id).filled_slots = 1;
+          this->tree_nodes.at(new_root_id).records[0] = split_result.separator_sent_up;
+          this->tree_nodes.at(new_root_id).child_page_ids[0] = split_result.left_node_id_original;
+          this->tree_nodes.at(new_root_id).child_page_ids[1] = split_result.right_node_id_new;
+          this->tree_nodes.at(new_root_id).parent_page_number = Struc::invalid_page_id;
         } { ///updating nww left and right nodes to not be the root and
           // point to the new root
           Node &left_node = return_page_by_id(split_result.left_node_id_original);
@@ -345,8 +352,7 @@ a split output
         // capacity
         std::array<Record, ARRAY_S + 1> records{};
         std::array<uint32_t, ARRAY_S + 2> child_page_id_array{};
-        uint32_t parent_id = Struc::invalid_page_id;
-        {
+        uint32_t parent_id = Struc::invalid_page_id; {
           const Node &node = return_page_by_id(node_id);
           parent_id = node.parent_page_number;
 
@@ -427,10 +433,12 @@ a split output
             }
         }
 
+        //  looper
+        std::size_t z;
         // update parent node on child records
-        for (std::size_t i = 0; i <= right_keys; ++i)
+        for (std::size_t z = 0; z <= right_keys; ++z)
           {
-            return_page_by_id(child_page_id_array[middle_index + 1 + i]).parent_page_number =
+            return_page_by_id(child_page_id_array[middle_index + 1 + z]).parent_page_number =
                 new_node_id;
           }
 
@@ -455,6 +463,7 @@ a split output
         auto &update_node = this->tree_nodes.at(update_node_id);
         uint32_t previous_next_node_id = update_node.next_leaf_id;
         uint32_t previous_parent_node_id = update_node.parent_page_number;
+        // uint32_t previous_previous_node_id = update_node.previous_leaf_id;
         const auto &source_array = update_node.records;
         constexpr size_t update_array_size = Node::ARRAY_SIZE + 1;
 
@@ -487,6 +496,7 @@ a split output
 
 
         uint32_t new_right_leaf = create_new_page(Struc::NodeType::Leaf);
+
         auto &update_node_reaquire = this->tree_nodes.at(update_node_id);
 
 
@@ -500,26 +510,22 @@ a split output
 
 
         std::copy(temp_array.begin(), temp_array.begin() + middle_index, left_new.begin());
-        std::cout << "temp: " << temp_array.data() << std::endl;
-        std::cout << "mid: " << middle_index << std::endl;
-        std::cout << "left: " << left_new.data() << std::endl;
-
+        // std::cout << "temp: " << temp_array.data() << std::endl;
+        // std::cout << "mid: " << middle_index << std::endl;
+        // std::cout << "left: " << left_new.data() << std::endl;
         std::copy(temp_array.begin() + middle_index, temp_array.end(), right_new.begin());
-
-
         size_t new_right_filled = update_array_size - middle_index;
+        std::copy_n(left_new.begin(), middle_index, this->tree_nodes[update_node_id].records.begin());
 
-        std::copy_n(left_new.begin(), middle_index, update_node_reaquire.records.begin());
-        update_node_reaquire.is_root = false;
-        update_node_reaquire.filled_slots = middle_index;
-        update_node_reaquire.next_leaf_id = new_right_leaf;
+        this->tree_nodes[update_node_id].is_root = false;
+        this->tree_nodes[update_node_id].filled_slots = middle_index;
+        this->tree_nodes[update_node_id].next_leaf_id = new_right_leaf;
 
         this->tree_nodes[new_right_leaf].records = right_new;
         this->tree_nodes[new_right_leaf].filled_slots = new_right_filled;
-        this->tree_nodes[new_right_leaf].parent_page_number =
-            update_node_reaquire.parent_page_number = previous_parent_node_id;
-        this->tree_nodes[new_right_leaf].next_leaf_id =
-            update_node_reaquire.next_leaf_id = previous_next_node_id;
+        this->tree_nodes[new_right_leaf].parent_page_number = previous_parent_node_id;
+        this->tree_nodes[new_right_leaf].next_leaf_id = previous_next_node_id;
+        // this->tree_nodes[new_right_leaf].previous_leaf_id = update_node_id;
 
         Struc::SplitOutput<IndexDataType> split_return
         {
@@ -527,7 +533,6 @@ a split output
         .right_node_id_new = new_right_leaf,
         .separator_sent_up = separator_record
         };
-        std::cerr << "\n Did we make it to the split internal record? 300\n";
 
         return split_return;
       }
@@ -583,8 +588,12 @@ a split output
         }
 
         //fullsplit, then carry the separator upward
-        std::cout << "\n Leaf \n" << std::to_string(leaf_id) << "- record: " << record.to_string()
-            << std::endl;
+        std::cout << "\n Leaf id: "
+            << std::to_string(leaf_id)
+            << " record val: "
+            << record.to_string()
+        << std::endl;
+
         auto split_output = split_node(leaf_id, record);
 
 
@@ -599,8 +608,6 @@ a split output
 
             if (parent_id == Struc::invalid_page_id) /* this is an invalid result--return*/
               {
-                std::cout << "\n this should execute once" << std::endl;
-
                 create_new_page(split_output);
                 return;
               }
@@ -619,8 +626,7 @@ a split output
               childindex,
               split_output.separator_sent_up,
               right_node_id
-              )
-            ;
+            );
             std::cerr << "\n Did we make it to the split internal record?\n";
           }
       }
@@ -706,6 +712,16 @@ int main()
     .file_name = {"zquil.sql"}
     };
 
+    schema::FileRecord test_file_record_7{
+    .inode = 41,
+    .parent_inode = 1,
+    .created_timestamp = 548721,
+    .size_bytes = 8,
+    .mode = 321,
+    .type{"sql"},
+    .file_name = {"po.sql"}
+    };
+
     schema::FileRecord test_file_record_8{
     .inode = 46,
     .parent_inode = 1,
@@ -745,32 +761,13 @@ int main()
     Struc::IndexRecord test_record_4{4, test_file_record_4.file_name};
     Struc::IndexRecord test_record_5{5, test_file_record_5.file_name};
     Struc::IndexRecord test_record_6{6, test_file_record_6.file_name};
+    Struc::IndexRecord test_record_7{7, test_file_record_7.file_name};
+    Struc::IndexRecord test_record_8{8, test_file_record_8.file_name};
+    Struc::IndexRecord test_record_9{9, test_file_record_9.file_name};
+    Struc::IndexRecord test_record_10{10, test_file_record_10.file_name};
 
 
     // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
-    // test_node.add_record_to_node(test_record_1);
-    // test_node.add_record_to_node(test_record_2);
-    // test_node.add_record_to_node(test_record_3);
-    // test_node.add_record_to_node(test_record_4);
-    // test_node.add_record_to_node(test_record_5);
-
-    // std::cout << test_record_1.to_string() << std::endl;
-    // std::cout << test_record_2.to_string() << std::endl;
-    // std::cout << test_record_3.to_string() << std::endl;
-    // std::cout << test_record_4.to_string() << std::endl;
-
-    // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
-    // test_node.page_number = 1;
-    // test_node.type = Struc::NodeType::Leaf;
-    // test_node.parent_page_number = Struc::invalid_page_id;
-    // test_node.next_leaf_id = Struc::invalid_page_id;
-
-    // test_node.add_record_to_node(test_record_1);
-    // test_node.add_record_to_node(test_record_2);
-    // test_node.add_record_to_node(test_record_3);
-    // test_node.add_record_to_node(test_record_4);
-    // test_node.add_record_to_node(test_record_5);
-
 
     std::cout <<
         " \n\n\n\n\n\n\n -----------printing out test node below------------" <<
@@ -779,13 +776,11 @@ int main()
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
     bptree.add_record(test_record_1);
     bptree.debug_whole_tree();
-
     std::cout << "\n record 1 added\n" << std::endl;
     bptree.add_record(test_record_2);
     bptree.debug_whole_tree();
     std::cout << "\n record 2 added\n" << std::endl;
     bptree.add_record(test_record_3);
-    std::cout << "\n DOES THIS HAPPEN?\n" << std::endl;
     bptree.debug_whole_tree();
     std::cout << "\n record 3 added\n" << std::endl;
     bptree.add_record(test_record_4);
@@ -797,6 +792,18 @@ int main()
     bptree.add_record(test_record_6);
     bptree.debug_whole_tree();
     std::cout << "\n record 6 added\n" << std::endl;
+    bptree.add_record(test_record_7);
+    bptree.debug_whole_tree();
+    std::cout << "\n record 7 added\n" << std::endl;
+    bptree.add_record(test_record_8);
+    bptree.debug_whole_tree();
+    std::cout << "\n record 8 added\n" << std::endl;
+    bptree.add_record(test_record_9);
+    bptree.debug_whole_tree();
+    std::cout << "\n record 9 added\n" << std::endl;
+    bptree.add_record(test_record_10);
+    bptree.debug_whole_tree();
+    std::cout << "\n record 10 added\n" << std::endl;
 
 
     //

@@ -14,9 +14,8 @@ namespace Struc
   //------------------------Constants------------------------------------------------
   enum class NodeType
     {
-    Leaf,
-    Internal,
-    Root
+    Leaf =0,
+    Internal = 1
     };
 
   extern const int PAGE_SIZE_IN_BYTES = 4096;
@@ -59,7 +58,11 @@ namespace Struc
   struct IndexRecord
     {
     uint32_t record_id;
-    IndexDataType field_value;
+    /*This field_value for string values needs to either be intialized with {}
+      or when I copy into this struct, i have to do
+      memcopy(field_value, from_text.date(), from_text.size())
+      where from_text is a string_view */
+    IndexDataType field_value{};
 
     static bool less_than_comparator
     (
@@ -121,9 +124,8 @@ namespace Struc
     uint16_t filled_slots = 0;
     uint32_t parent_page_number = invalid_page_id;
     uint32_t next_leaf_id = invalid_page_id;
+    // uint32_t previous_leaf_id = invalid_page_id;
 
-    // static constexpr std::size_t ARRAY_SIZE =
-    //     4096 / sizeof(IndexRecord<IndexDataType>);
     static constexpr std::size_t asize_temp = 2;
     static constexpr uint32_t overflow_record_cushion = 0;
     // static constexpr std::size_t ARRAY_SIZE = std::floor(
@@ -203,7 +205,7 @@ namespace Struc
         add_to_array(record, ind);
       }
 
-    std::string to_string()
+    std::string to_string() const
       {
         std::string array_res = "\n ";
         std::string separator = " \n ";
@@ -212,15 +214,18 @@ namespace Struc
             array_res += records[i].to_string() + separator;
             i++;
           }
+        char node_type_string = type == NodeType::Internal ? 'I' : 'L';
 
 
         return
             "\n page num: " + std::to_string(page_number) +
             "\n array size: " + std::to_string(ARRAY_SIZE) +
+            "\n node type: " + node_type_string +
             "\n is root: " + std::to_string(is_root) +
             "\n filled: " + std::to_string(filled_slots) +
             "\n parent:" + std::to_string(parent_page_number) +
             "\n next leaf: " + std::to_string(next_leaf_id) +
+              // "\n previous leaf: " + std::to_string(previous_leaf_id) +
             "\n records: " + array_res;
       }
     };
