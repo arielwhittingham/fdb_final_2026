@@ -629,9 +629,11 @@ a split output
             );
             std::cerr << "\n Did we make it to the split internal record?\n";
           }
-      }
-    };
-  }
+      }// add record func
+
+    void verify_node
+    };// class
+  }//namespace
 
 
 //func main
