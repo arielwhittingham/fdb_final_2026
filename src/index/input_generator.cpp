@@ -2,6 +2,7 @@
 #include <array>
 #include <vector>
 #include <chrono>
+#include <string>
 #include "../schema/schema_objects.h"
 #include "structs_bplustree.h"
 #include <filesystem>
@@ -42,25 +43,39 @@
 //
 //   }
 
-int main()
+
+namespace test_inputs
   {
-    std::vector<std::string> ret;
-    // test_inputs::name_return_vector(200);
-    std::string TEST_FILE_NAME = "/Users/arielwhittingham/prod_workspace/fdb_final_2026/test_data_fdb_1.csv";
-    std::ifstream input_file;
+  std::vector<std::tuple<std::string, std::string>> get_sample_file_name_records()
+    {
+      std::vector<std::tuple<std::string, std::string>> ret;
+      // test_inputs::name_return_vector(200);
+      std::string TEST_FILE_NAME = "/Users/arielwhittingham/prod_workspace/fdb_final_2026/test_data_fdb_1.csv";
+      std::ifstream input_file;
+      std::string line;
+      std::tuple<std::string, std::string> row_tuple;
+      input_file.open(TEST_FILE_NAME, std::ios::in);
+      while (std::getline(input_file, line))
 
-    std::string line;
-    input_file.open(TEST_FILE_NAME, std::ios::in);
-    while (std::getline(input_file, line))
-      {
-        std::stringstream ss(line);
-        ret.push_back(ss.str());
-        std::cout << ss.str()  << std::endl;
+        {
+          std::stringstream ss(line);
+          std::string first_col;
+          std::string second_col;
+          std::getline(ss, first_col,','); //column 1
+          std::getline(ss, second_col); //column 2
+          ret.emplace_back(first_col, second_col);
+          // std::cout << token  << std::endl;
 
+        }
+      for (int x =1; x<= ret.size(); x++)
+        {
+          auto& fst = std::get<0>(ret[x]);
+          auto& sec = std::get<1>(ret[x]);
+          // std::cout << std::get<0>(ret[x]) << " - " << std::get<1>(ret[x]) << std::endl;
+          // std::cout << std::get<0>(ret[x]) << std::endl;
+          std::cout << fst << sec<< std::endl;
+        }
 
-
-      }
-
-
-    return 0;
+      return ret;
+    }
   }

@@ -126,7 +126,7 @@ namespace Struc
     uint32_t next_leaf_id = invalid_page_id;
     // uint32_t previous_leaf_id = invalid_page_id;
 
-    static constexpr std::size_t asize_temp = 2;
+    static constexpr std::size_t asize_temp = 3;
     static constexpr uint32_t overflow_record_cushion = 0;
     // static constexpr std::size_t ARRAY_SIZE = std::floor(
     //                                             PAGE_SIZE_IN_BYTES / sizeof(

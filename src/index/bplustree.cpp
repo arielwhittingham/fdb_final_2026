@@ -4,6 +4,7 @@
 #include <vector>
 #include "../schema/schema_objects.h"
 #include "structs_bplustree.h"
+#include "input_generator.cpp"
 #include <string>
 #include <cxxabi.h>
 #include <cstdint>
@@ -627,11 +628,11 @@ a split output
               split_output.separator_sent_up,
               right_node_id
             );
-            std::cerr << "\n Did we make it to the split internal record?\n";
+            // std::cerr << "\n Did we make it to the split internal record?\n";
           }
       }// add record func
 
-    void verify_node
+    // void verify_node
     };// class
   }//namespace
 
@@ -770,7 +771,7 @@ int main()
 
 
     // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
-
+/* ORIGINAL TESTER CODE
     std::cout <<
         " \n\n\n\n\n\n\n -----------printing out test node below------------" <<
         std::endl;
@@ -807,7 +808,7 @@ int main()
     bptree.debug_whole_tree();
     std::cout << "\n record 10 added\n" << std::endl;
 
-
+*/
     //
     std::array<uint32_t, 14> left_original{
     16, 21, 30, 41, 50, 62, 72, 89, 90, 101, 110, 120, 130, 135
@@ -815,26 +816,55 @@ int main()
     std::array<uint32_t, 14> left_new{};
     std::array<uint32_t, 14> right_new{};
 
-    //
-    // std::copy(left_original.begin(), left_original.begin() + 7, left_new.begin());
-    //
-    // // auto x = abi::__cxa_demangle(typeid(split_iterator).name(), nullptr, nullptr, nullptr);
+
+    Index::BPlusTreeManager<Struc::FileNameDataType> bptree_2("test");
+
+    auto test_vals =test_inputs::get_sample_file_name_records();
+
+    for ( int i=0; i <test_vals.size() ; i++ )
+      {
+        if (i > 0)
+          {
+            auto x = test_vals[i];
+            int numcol = 0;
+            auto col_1_original =  std::get<0>(x);
+            auto col_2_original =  std::get<1>(x);
+            std::stringstream ss(col_1_original);
+            ss>>numcol;
+
+            // std::cout << numcol <<  col_2_original << std::endl;
+            std::array<char, 255> name_array{};
+            std::size_t data_len = col_2_original.copy(name_array.data(), 254);
+            name_array[data_len] = '\0';
+
+            Struc::IndexRecord<Struc::FileNameDataType> test_record{static_cast<uint32_t>(numcol), name_array};
+            bptree_2.add_record(test_record);
+            bptree_2.debug_whole_tree();
+
+            // if (i = 50)
+            //   {
+            //     std::cout << "Pause Here" << std::endl;
+            //     std::cout << "Did we pause?" << std::endl;
+            //
+            //   }
+
+            // std::cout << "DONE" << std::endl;
+          }
+
+        std::cout << "DONE" << std::endl;
 
 
-    // int d = Index::get_array_index_without_checking_exists(test_record_1);
-    // Index::MemoryPage p;
-    //  p.page_slot = {1,2,3,4,5};
+      }
 
 
-    // Index::BPlusTreeManager testtree{"test_dir"};
-    // testtree.add_record(testrecord_1);
 
-    // Index::BufferManager bufftest;
 
-    // auto rcount = bufftest.write_record_to_file();
 
-    // std::cout << "\n records in \n" << rcount << "\n";
-    // std::cout << "\n TEST RECORD 1: \n" << testrecord_1.to_string() << "\n";
+
+
+
+
+
 
     /*
 
