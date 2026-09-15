@@ -126,7 +126,7 @@ namespace Struc
     uint32_t next_leaf_id = invalid_page_id;
     // uint32_t previous_leaf_id = invalid_page_id;
 
-    static constexpr std::size_t asize_temp = 3;
+    static constexpr std::size_t asize_temp = 6;
     static constexpr uint32_t overflow_record_cushion = 0;
     // static constexpr std::size_t ARRAY_SIZE = std::floor(
     //                                             PAGE_SIZE_IN_BYTES / sizeof(
@@ -135,6 +135,7 @@ namespace Struc
     static constexpr std::size_t ARRAY_SIZE = asize_temp - overflow_record_cushion;
     std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records{};
     bool is_root = false;
+    static constexpr std::size_t record_size_bytes = sizeof(StorageRecord);
 
     std::array<uint32_t, ARRAY_SIZE + 1> child_page_ids{};
 
@@ -219,7 +220,9 @@ namespace Struc
 
         return
             "\n page num: " + std::to_string(page_number) +
+            "\n Node Size in Bytes: " + std::to_string(sizeof(this)) +
             "\n array size: " + std::to_string(ARRAY_SIZE) +
+            "\n record size in bytes: " + std::to_string(record_size_bytes) +
             "\n node type: " + node_type_string +
             "\n is root: " + std::to_string(is_root) +
             "\n filled: " + std::to_string(filled_slots) +

@@ -175,6 +175,7 @@ If all elements in the range are smaller than the given value, it returns the en
     //                                           overflow_record_cushion;
     std::vector<Node> tree_nodes;
     uint32_t node_count = 1;
+    uint32_t record_count = 0;
 
 
     // --------constructor below---------
@@ -203,8 +204,8 @@ If all elements in the range are smaller than the given value, it returns the en
         std::size_t node_index = 0;
         for (; node_index < tree_nodes.size(); node_index++)
           {
-            std::cout << "\n" << "\n";
-            std::cout << " Node: " << node_index << "\n -- Values: " << tree_nodes[node_index].
+            std::cout << "\n Total Record Count: " << this->record_count << "\n";
+            std::cout << " Node: " << node_index << " -- Values: " << tree_nodes[node_index].
                 to_string() << "\n";
           }
       }
@@ -580,6 +581,10 @@ a split output
           // if (it != end && !Record::less_than_comparator(record, *it))
           //   throw std::runtime_error("duplicate key: " + record.to_string());
 
+          /*
+           Increment Record Count by 1
+           */
+          ++this->record_count;
           if (leaf.filled_slots < array_size)
             {
               leaf.add_to_array(
