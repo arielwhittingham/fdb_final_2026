@@ -11,6 +11,7 @@ testnote.md
 *.o
 *.obj
 *dSYM*
+*.dSYM*
 # Precompiled Headers
 *.gch
 *.pch
