@@ -124,20 +124,21 @@ namespace Struc
     uint16_t filled_slots = 0;
     uint32_t parent_page_number = invalid_page_id;
     uint32_t next_leaf_id = invalid_page_id;
-    // uint32_t previous_leaf_id = invalid_page_id;
-
-    static constexpr std::size_t asize_temp = 6;
-    static constexpr uint32_t overflow_record_cushion = 0;
-    // static constexpr std::size_t ARRAY_SIZE = std::floor(
-    //                                             PAGE_SIZE_IN_BYTES / sizeof(
-    //                                               IndexRecord<IndexDataType>)) -
-    //                                           overflow_record_cushion;
-    static constexpr std::size_t ARRAY_SIZE = asize_temp - overflow_record_cushion;
-    std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records{};
-    bool is_root = false;
     static constexpr std::size_t record_size_bytes = sizeof(StorageRecord);
+    bool is_root = false;
+    static constexpr std::size_t overhead =
+    sizeof(page_number) +
+    sizeof(parent_page_number) +
+    sizeof(type) +
+    sizeof(filled_slots) +
+    sizeof(next_leaf_id) +
+    sizeof(is_root);
+    static constexpr std::size_t ARRAY_SIZE =(PAGE_SIZE_IN_BYTES - overhead - sizeof(uint32_t))/(sizeof(uint32_t) + record_size_bytes);
 
+    std::array<IndexRecord<IndexDataType>, ARRAY_SIZE> records{};
     std::array<uint32_t, ARRAY_SIZE + 1> child_page_ids{};
+
+
 
     /*Don't need a constructor yet*/
     // BPlusTreeNode()

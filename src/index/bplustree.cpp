@@ -562,6 +562,20 @@ a split output
         return current_id;
       }
 
+        // func find_leaf
+    Record create_search_record_from_field_value(IndexDataType &value)
+      {
+        return Struc::IndexRecord<IndexDataType> {1,value};
+      }
+
+    uint32_t get_leaf_from_search_value(IndexDataType &searchvalue)
+      {
+        Record resulting_record = create_search_record_from_field_value(searchvalue);
+        return find_leaf_from_record_val(resulting_record);
+
+      }
+
+
     // func add_record
     void add_record(const Record &record)
       {
@@ -857,6 +871,8 @@ int main()
           }
 
         std::cout << "DONE" << std::endl;
+        const auto search_val =  "gga_massive.txt";
+        bptree_2.get_leaf_from_search_value(search_val);
 
 
       }
