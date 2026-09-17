@@ -12,6 +12,7 @@
 #include <fstream>
 #include <variant>
 #include <optional>
+#include "../utils/string_utils.h"
 #include <filesystem>
 
 
@@ -871,9 +872,10 @@ int main()
           }
 
         std::cout << "DONE" << std::endl;
-        const auto search_val =  "gga_massive.txt";
-        bptree_2.get_leaf_from_search_value(search_val);
-
+        const std::string_view search_val =  "gga_small.csv";
+        std::array<char, 255> conv = utils::convert_string_view_to_char_array<255>(255, search_val);
+        auto res = bptree_2.get_leaf_from_search_value(conv);
+        std::cout << "leaf node number for  gga_small.csv: " << res  << std::endl;
 
       }
 
