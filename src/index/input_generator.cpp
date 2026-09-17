@@ -64,17 +64,16 @@ namespace test_inputs
           std::getline(ss, first_col,','); //column 1
           std::getline(ss, second_col); //column 2
           ret.emplace_back(first_col, second_col);
-          // std::cout << token  << std::endl;
 
         }
-      for (int x =1; x<= ret.size(); x++)
-        {
-          auto& fst = std::get<0>(ret[x]);
-          auto& sec = std::get<1>(ret[x]);
-          // std::cout << std::get<0>(ret[x]) << " - " << std::get<1>(ret[x]) << std::endl;
-          // std::cout << std::get<0>(ret[x]) << std::endl;
-          std::cout << fst << sec<< std::endl;
-        }
+      // for (int x =1; x<= ret.size(); x++)
+      //   {
+      //     auto& fst = std::get<0>(ret[x]);
+      //     auto& sec = std::get<1>(ret[x]);
+      //     // std::cout << std::get<0>(ret[x]) << " - " << std::get<1>(ret[x]) << std::endl;
+      //     // std::cout << std::get<0>(ret[x]) << std::endl;
+      //     // std::cout << fst << sec<< std::endl;
+      //   }
 
       return ret;
     }

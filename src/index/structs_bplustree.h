@@ -124,7 +124,10 @@ namespace Struc
     uint16_t filled_slots = 0;
     uint32_t parent_page_number = invalid_page_id;
     uint32_t next_leaf_id = invalid_page_id;
-    static constexpr std::size_t record_size_bytes = sizeof(StorageRecord);
+    IndexRecord<IndexDataType> min;
+    IndexRecord<IndexDataType> max;
+
+    static constexpr std::size_t record_size_bytes = sizeof(IndexRecord<IndexDataType>);
     bool is_root = false;
     static constexpr std::size_t overhead =
     sizeof(page_number) +
@@ -205,6 +208,11 @@ namespace Struc
           record, this->records);
 
         add_to_array(record, ind);
+      }
+    void set_min_max_for_node()
+      {
+        this->min = this-> records[0];
+        this->max = this-> records[filled_slots -1];
       }
 
     std::string to_string() const

@@ -513,12 +513,10 @@ a split output
 
 
         std::copy(temp_array.begin(), temp_array.begin() + middle_index, left_new.begin());
-        // std::cout << "temp: " << temp_array.data() << std::endl;
-        // std::cout << "mid: " << middle_index << std::endl;
-        // std::cout << "left: " << left_new.data() << std::endl;
         std::copy(temp_array.begin() + middle_index, temp_array.end(), right_new.begin());
         size_t new_right_filled = update_array_size - middle_index;
-        std::copy_n(left_new.begin(), middle_index, this->tree_nodes[update_node_id].records.begin());
+        std::copy_n(
+          left_new.begin(), middle_index, this->tree_nodes[update_node_id].records.begin());
 
         this->tree_nodes[update_node_id].is_root = false;
         this->tree_nodes[update_node_id].filled_slots = middle_index;
@@ -563,17 +561,33 @@ a split output
         return current_id;
       }
 
-        // func find_leaf
-    Record create_search_record_from_field_value(IndexDataType &value)
+    // func find_leaf
+    Record create_search_record_from_field_value(const IndexDataType &value)
       {
-        return Struc::IndexRecord<IndexDataType> {1,value};
+        return Struc::IndexRecord<IndexDataType>{0, value};
       }
 
     uint32_t get_leaf_from_search_value(IndexDataType &searchvalue)
       {
         Record resulting_record = create_search_record_from_field_value(searchvalue);
-        return find_leaf_from_record_val(resulting_record);
+        auto starter_node_id = find_leaf_from_record_val(resulting_record);
+        while (starter_node_id != Struc::invalid_page_id)
+          {
+            auto &starter_leaf = return_page_by_id(starter_node_id);
+            auto  end  = starter_leaf.records.begin() + starter_leaf.filled_slots;
 
+            // first record that is greater than or equal to resulting_record
+            auto lb = lower_bound(starter_leaf.records.begin(), end,  resulting_record,Record::less_than_comparator);
+            if (lb != end)
+              {// found the right leaf
+                return starter_node_id;
+              }
+            /// doesnt find leaf, scan to next node
+            starter_node_id = starter_leaf.next_leaf_id;
+
+          }
+
+        return Struc::invalid_page_id;
       }
 
 
@@ -604,16 +618,17 @@ a split output
             {
               leaf.add_to_array(
                 record, static_cast<std::size_t>(std::distance(leaf.records.begin(), it)));
+              leaf.set_min_max_for_node();
               return;
             }
         }
 
         //fullsplit, then carry the separator upward
-        std::cout << "\n Leaf id: "
-            << std::to_string(leaf_id)
-            << " record val: "
-            << record.to_string()
-        << std::endl;
+        // std::cout << "\n Leaf id: "
+        //     << std::to_string(leaf_id)
+        //     << " record val: "
+        //     << record.to_string()
+        // << std::endl;
 
         auto split_output = split_node(leaf_id, record);
 
@@ -650,11 +665,11 @@ a split output
             );
             // std::cerr << "\n Did we make it to the split internal record?\n";
           }
-      }// add record func
+      } // add record func
 
     // void verify_node
-    };// class
-  }//namespace
+    }; // class
+  } //namespace
 
 
 //func main
@@ -668,167 +683,6 @@ int main()
     ff.push_back(9);
     int tester{5};
 
-    std::array<uint32_t, 5> test{1, 2, 3, 4, 5};
-
-    int a = Index::element_exists(4, test);
-
-
-    schema::FileRecord test_file_record_1{
-    .inode = 1,
-    .parent_inode = 5,
-    .created_timestamp = 12345,
-    .size_bytes = 4,
-    .mode = 321,
-    .type{"txt"},
-    .file_name = {"file_1.txt"}
-    };
-
-    schema::FileRecord test_file_record_2{
-    .inode = 3,
-    .parent_inode = 1,
-    .created_timestamp = 548722,
-    .size_bytes = 8,
-    .mode = 322,
-    .type{"txt"},
-    .file_name = {"macbook_pro.txt"}
-    };
-
-    schema::FileRecord test_file_record_3{
-    .inode = 20,
-    .parent_inode = 1,
-    .created_timestamp = 548722,
-    .size_bytes = 8,
-    .mode = 322,
-    .type{"sql"},
-    .file_name = {"query_file.sql"}
-    };
-
-
-    schema::FileRecord test_file_record_4{
-    .inode = 7,
-    .parent_inode = 1,
-    .created_timestamp = 548722,
-    .size_bytes = 8,
-    .mode = 322,
-    .type{"sql"},
-    .file_name = {"ariel_query_file.sql"}
-    };
-
-
-    schema::FileRecord test_file_record_5{
-    .inode = 5,
-    .parent_inode = 1,
-    .created_timestamp = 548722,
-    .size_bytes = 8,
-    .mode = 322,
-    .type{"sql"},
-    .file_name = {"zriel_query_file.sql"}
-    };
-
-    schema::FileRecord test_file_record_6{
-    .inode = 41,
-    .parent_inode = 1,
-    .created_timestamp = 548721,
-    .size_bytes = 8,
-    .mode = 321,
-    .type{"sql"},
-    .file_name = {"zquil.sql"}
-    };
-
-    schema::FileRecord test_file_record_7{
-    .inode = 41,
-    .parent_inode = 1,
-    .created_timestamp = 548721,
-    .size_bytes = 8,
-    .mode = 321,
-    .type{"sql"},
-    .file_name = {"po.sql"}
-    };
-
-    schema::FileRecord test_file_record_8{
-    .inode = 46,
-    .parent_inode = 1,
-    .created_timestamp = 548721,
-    .size_bytes = 8,
-    .mode = 321,
-    .type{"sql"},
-    .file_name = {"ag.sql"}
-    };
-
-
-    schema::FileRecord test_file_record_9{
-    .inode = 14,
-    .parent_inode = 1,
-    .created_timestamp = 548721,
-    .size_bytes = 8,
-    .mode = 321,
-    .type{"sql"},
-    .file_name = {"ggzquil.sql"}
-    };
-
-
-    schema::FileRecord test_file_record_10{
-    .inode = 12,
-    .parent_inode = 1,
-    .created_timestamp = 548721,
-    .size_bytes = 8,
-    .mode = 321,
-    .type{"sql"},
-    .file_name = {"1zquil.sql"}
-    };
-
-
-    Struc::IndexRecord test_record_1{1, test_file_record_1.file_name};
-    Struc::IndexRecord test_record_2{2, test_file_record_2.file_name};
-    Struc::IndexRecord test_record_3{3, test_file_record_3.file_name};
-    Struc::IndexRecord test_record_4{4, test_file_record_4.file_name};
-    Struc::IndexRecord test_record_5{5, test_file_record_5.file_name};
-    Struc::IndexRecord test_record_6{6, test_file_record_6.file_name};
-    Struc::IndexRecord test_record_7{7, test_file_record_7.file_name};
-    Struc::IndexRecord test_record_8{8, test_file_record_8.file_name};
-    Struc::IndexRecord test_record_9{9, test_file_record_9.file_name};
-    Struc::IndexRecord test_record_10{10, test_file_record_10.file_name};
-
-
-    // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
-/* ORIGINAL TESTER CODE
-    std::cout <<
-        " \n\n\n\n\n\n\n -----------printing out test node below------------" <<
-        std::endl;
-
-    Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
-    bptree.add_record(test_record_1);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 1 added\n" << std::endl;
-    bptree.add_record(test_record_2);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 2 added\n" << std::endl;
-    bptree.add_record(test_record_3);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 3 added\n" << std::endl;
-    bptree.add_record(test_record_4);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 4 added\n" << std::endl;
-    bptree.add_record(test_record_5);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 5 added\n" << std::endl;
-    bptree.add_record(test_record_6);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 6 added\n" << std::endl;
-    bptree.add_record(test_record_7);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 7 added\n" << std::endl;
-    bptree.add_record(test_record_8);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 8 added\n" << std::endl;
-    bptree.add_record(test_record_9);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 9 added\n" << std::endl;
-    bptree.add_record(test_record_10);
-    bptree.debug_whole_tree();
-    std::cout << "\n record 10 added\n" << std::endl;
-
-*/
     //
     std::array<uint32_t, 14> left_original{
     16, 21, 30, 41, 50, 62, 72, 89, 90, 101, 110, 120, 130, 135
@@ -839,71 +693,61 @@ int main()
 
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree_2("test");
 
-    auto test_vals =test_inputs::get_sample_file_name_records();
+    auto test_vals = test_inputs::get_sample_file_name_records();
 
-    for ( int i=0; i <test_vals.size() ; i++ )
+    for (int i = 0; i < test_vals.size(); i++)
       {
+        //loop for each sample record
         if (i > 0)
           {
             auto x = test_vals[i];
             int numcol = 0;
-            auto col_1_original =  std::get<0>(x);
-            auto col_2_original =  std::get<1>(x);
+            auto col_1_original = std::get<0>(x);
+            auto col_2_original = std::get<1>(x);
             std::stringstream ss(col_1_original);
-            ss>>numcol;
+            ss >> numcol;
 
             // std::cout << numcol <<  col_2_original << std::endl;
             std::array<char, 255> name_array{};
             std::size_t data_len = col_2_original.copy(name_array.data(), 254);
             name_array[data_len] = '\0';
 
-            Struc::IndexRecord<Struc::FileNameDataType> test_record{static_cast<uint32_t>(numcol), name_array};
+            Struc::IndexRecord<Struc::FileNameDataType> test_record{
+            static_cast<uint32_t>(numcol), name_array
+            };
             bptree_2.add_record(test_record);
-            bptree_2.debug_whole_tree();
-
-            // if (i = 50)
-            //   {
-            //     std::cout << "Pause Here" << std::endl;
-            //     std::cout << "Did we pause?" << std::endl;
-            //
-            //   }
-
-            // std::cout << "DONE" << std::endl;
-          }
-
-        std::cout << "DONE" << std::endl;
-        const std::string_view search_val =  "gga_small.csv";
-        std::array<char, 255> conv = utils::convert_string_view_to_char_array<255>(255, search_val);
-        auto res = bptree_2.get_leaf_from_search_value(conv);
-        std::cout << "leaf node number for  gga_small.csv: " << res  << std::endl;
-
+          } //END loop for each sample record
       }
+    // const std::string_view search_val =  "gga_a_very.csv";
+    // bptree_2.debug_whole_tree();
+    std::cout << "DONE" << std::endl;
+    std::array<char, 255> conv = utils::convert_string_view_to_char_array<255>(
+      255, "a_a_crystalline.txt");
+    auto real_dummy_record = Struc::IndexRecord<Struc::FileNameDataType>{59, "a_a_crystalline.txt"};
+    auto real = bptree_2.find_leaf_from_record_val(real_dummy_record);
+    auto res = bptree_2.get_leaf_from_search_value(conv);
+    bptree_2.debug_whole_tree();
+    std::cout << "based on new logic leaf node number for   a_a_crystalline.txt: " << res << std::endl;
+    std::cout << "Real for descender, diff than the searcher because this needs to"
+                 "say where this record should be added in the data.  a_a_crystalline.txt: " << real << std::endl;
 
-
-
-
-
-
-
-
-
-
-
-    /*
-
-    std::cout << d << std::endl;
-
-
-    auto indval = std::lower_bound(ff.begin(), ff.end(), tester);
-    auto ind = std::distance(ff.begin(), indval);
-    std::cout << "sindex of " << tester << " = " << ind << "\n";
-    ff.insert(indval, tester);
-
-    for (auto &c: ff) {
-        std::cout << c << "\n";
-    }
-
-    return 0;
-    */
     return 0;
   }
+
+
+/*
+
+std::cout << d << std::endl;
+
+
+auto indval = std::lower_bound(ff.begin(), ff.end(), tester);
+auto ind = std::distance(ff.begin(), indval);
+std::cout << "sindex of " << tester << " = " << ind << "\n";
+ff.insert(indval, tester);
+
+for (auto &c: ff) {
+    std::cout << c << "\n";
+}
+
+return 0;
+*/
