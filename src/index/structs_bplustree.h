@@ -31,6 +31,7 @@ namespace Struc
 
   //------------------------Record Management------------------------------------------------
 
+
   struct StorageRecord
     {
     uint32_t record_id;

@@ -623,12 +623,6 @@ a split output
             }
         }
 
-        //fullsplit, then carry the separator upward
-        // std::cout << "\n Leaf id: "
-        //     << std::to_string(leaf_id)
-        //     << " record val: "
-        //     << record.to_string()
-        // << std::endl;
 
         auto split_output = split_node(leaf_id, record);
 
@@ -666,6 +660,17 @@ a split output
             // std::cerr << "\n Did we make it to the split internal record?\n";
           }
       } // add record func
+
+
+
+    
+
+    std::vector<uint32_t> return_matching_record_ids()
+      {
+        std::vector<uint32_t> matching_records{};
+
+
+      }
 
     // void verify_node
     }; // class
