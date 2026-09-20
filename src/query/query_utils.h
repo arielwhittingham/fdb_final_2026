@@ -67,20 +67,8 @@ namespace query
     }
 
 
-  std::string get_where_clause(std::string query_text)
-    {
-      std::string_view sep("where");
-     auto where_pos = query_text.find(sep);
-      if (where_pos == std::string::npos)
-        {
-          throw std::runtime_error("where clause not found");
-        }
-      std::string clause = query_text.substr(where_pos + sep.size(),query_text.size());
-      return clause;
 
-    }
-
-  const static std::string_view trim_leading(std::string_view where_clause)
+  const static std::string trim_leading(std::string where_clause)
     {
 
 
@@ -92,6 +80,18 @@ namespace query
 
     }
 
+  std::string get_where_clause(std::string query_text)
+    {
+      std::string sep("where");
+      auto where_pos = query_text.find(sep);
+      if (where_pos == std::string::npos)
+        {
+          throw std::runtime_error("where clause not found");
+        }
+      return trim_leading(query_text.substr(where_pos + sep.size()));
+
+
+    }
 
   std::vector<std::string> primary_where_clause_parser(std::string &where_clause)
     {

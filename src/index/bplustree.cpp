@@ -663,16 +663,25 @@ a split output
       } // add record func
 
 
-    void process_where_clause(std::string_view query_text)
+    static void process_where_clause(const std::string& query_text)
       {
         std::cout << query_text << std::endl;
+        std::string where_clause = query::get_where_clause(query_text);
+        const auto tokens = query::primary_where_clause_parser(where_clause);
+        for (auto& i : tokens)
+          {
+            std::cout << i  << std::endl;
+
+          }
+
+
 
       }
 
 
     // void return_range_from_value;
 
-    std::vector<uint32_t> return_matching_record_ids(IndexDataType &search_record)
+    /*std::vector<uint32_t>*/ void return_matching_record_ids(IndexDataType &search_record)
       {
 
 
@@ -702,6 +711,9 @@ int main()
     std::array<uint32_t, 14> left_new{};
     std::array<uint32_t, 14> right_new{};
 
+    Index::BPlusTreeManager<Struc::FileNameDataType>::process_where_clause("select * from tbl where field = 100");
+
+    /*
 
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree_2("test");
 
@@ -742,7 +754,7 @@ int main()
     std::cout << "based on new logic leaf node number for   a_a_crystalline.txt: " << res << std::endl;
     std::cout << "Real for descender, diff than the searcher because this needs to"
                  "say where this record should be added in the data.  a_a_crystalline.txt: " << real << std::endl;
-
+*/
     return 0;
   }
 
