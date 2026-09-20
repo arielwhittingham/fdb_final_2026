@@ -13,6 +13,7 @@
 #include <variant>
 #include <optional>
 #include "../utils/string_utils.h"
+#include "../query/query_utils.h"
 #include <filesystem>
 
 
@@ -662,7 +663,14 @@ a split output
       } // add record func
 
 
-    void return_range_from_value
+    void process_where_clause(std::string_view query_text)
+      {
+        std::cout << query_text << std::endl;
+
+      }
+
+
+    // void return_range_from_value;
 
     std::vector<uint32_t> return_matching_record_ids(IndexDataType &search_record)
       {
