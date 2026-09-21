@@ -17,11 +17,11 @@ namespace query
    */
 
   template<typename InputDataType>
-  struct ParsedWhereClause
+  struct where_clause_range_object
     {
-    std::string &where_field;
-    InputDataType &start{};
-    InputDataType &end{};
+    const std::string &where_field;
+    const InputDataType &start{};
+    const InputDataType &end{};
     };
 
   std::vector<std::string> get_clause_tokens(std::string &input)
