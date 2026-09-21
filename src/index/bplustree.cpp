@@ -668,23 +668,20 @@ a split output
 
     static query::where_clause_range_object<IndexDataType> process_where_clause(const std::string &query_text)
       {
-        std::unordered_map<std::string,char> search_types = {
-          {"exact",'e'},
-          {"prefix",'p'},
-          {"range",'r'},
-          {"inequality",'e'}
-        };
-
+        std::string start_range_string{""};
+        std::string end_range_string{""};
+        std::uint32_t start_range_uint32_t = 0;
+        std::uint32_t end_range_uint32_t = 0;
         std::cout << query_text << std::endl;
         std::string where_clause = query::get_where_clause(query_text);
         std::vector<std::string> tokens{};
         try
           {
             tokens = query::primary_where_clause_parser(where_clause);
-            for (auto &i: tokens)
-              {
-                std::cout << i << std::endl;
-              }
+            // for (auto &i: tokens)
+            //   {
+            //     std::cout << i << std::endl;
+            //   }
           } catch (const std::runtime_error &e)
             {
               std::cout << "Error parsing where clause tokens: " << e.what() << std::endl;
@@ -702,16 +699,16 @@ a split output
 
         if (tokens.size() == 6)
           {// between | int only
-            if constexpr (__is_same(IndexDataType, int)) {
+            if  (__is_same(IndexDataType, uint32_t)) {
                 if (tokens[0] == "between")
                   {
                     std::string &field_name = tokens[1];
-                    const uint32_t start_range =  static_cast<uint32_t>(std::stoul(tokens[3]));
-                    const uint32_t end_range =  static_cast<uint32_t>(std::stoul(tokens[5]));
+                    start_range_uint32_t =  static_cast<uint32_t>(std::stoul(tokens[3]));
+                    end_range_uint32_t =  static_cast<uint32_t>(std::stoul(tokens[5]));
                     query::where_clause_range_object<IndexDataType> rng = {
                       .where_field = field_name,
-                      .start = start_range,
-                      .end = end_range
+                      .start = start_range_uint32_t,
+                      .end = end_range_uint32_t
                     };
                     return rng;
                   }
@@ -720,17 +717,17 @@ a split output
         if (tokens.size() == 4)
           {
             // equality, prefix, inequality | int or str
-            if constexpr (__is_same(IndexDataType, int))
+            if  (__is_same(IndexDataType, uint32_t))
               {//get range for these search types when field is int
                 if (tokens[0] == "exact")
                   {
                     std::string &field_name = tokens[1];
-                    const uint32_t start_range =  static_cast<uint32_t>(std::stoul(tokens[3]));
-                    const uint32_t end_range =  start_range + 1;
+                    uint32_t start_range_uint32_t =  static_cast<uint32_t>(std::stoul(tokens[3]));
+                    uint32_t end_range_uint32_t =  start_range_uint32_t + 1;
                     query::where_clause_range_object<IndexDataType> rng = {
                       .where_field = field_name,
-                      .start = start_range,
-                      .end = end_range
+                      .start = start_range_uint32_t,
+                      .end = end_range_uint32_t
                     };
                     return rng;
 
@@ -739,24 +736,24 @@ a split output
                 if (tokens[0] == "inequality")
                   {
                     std::string &field_name = tokens[1];
-                    const uint32_t input_val =  static_cast<uint32_t>(std::stoul(tokens[3]));
+                    uint32_t input_val =  static_cast<uint32_t>(std::stoul(tokens[3]));
                     uint32_t start_range{};
                     uint32_t end_range{};
                     if (tokens[3] == "<")
                       {
-                        start_range = 0;
-                        end_range = input_val;
+                        start_range_uint32_t = 0;
+                        end_range_uint32_t = input_val;
                       }
                     else
                       {
-                        start_range = input_val;
-                        end_range = UINT32_MAX;
+                        start_range_uint32_t = input_val;
+                        end_range_uint32_t = UINT32_MAX;
                       }
 
                     query::where_clause_range_object<IndexDataType> rng = {
                       .where_field = field_name,
-                      .start = start_range,
-                      .end = end_range
+                      .start = start_range_uint32_t,
+                      .end = end_range_uint32_t
                     };
                     return rng;
 
@@ -822,7 +819,7 @@ int main()
     std::array<uint32_t, 14> left_new{};
     std::array<uint32_t, 14> right_new{};
 
-    Index::BPlusTreeManager<Struc::FileNameDataType>::process_where_clause(
+    Index::BPlusTreeManager<std::uint32_t>::process_where_clause(
       "select * from tbl where field = 100");
 
     /*
