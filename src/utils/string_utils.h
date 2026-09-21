@@ -34,7 +34,7 @@ namespace utils
 
     }
 
-  std::tuple<std::array<char, 255>, std::array<char, 255>> range_from_text_search_prefix(std::string_view input_string)
+  std::tuple<CharString, CharString> range_from_text_search_prefix(std::string_view input_string)
     {
       CharString conv =convert_string_view_to_char_array(input_string);
       CharString conv_end =convert_string_view_to_char_array(input_string);

@@ -14,6 +14,7 @@
 #include <optional>
 #include "../utils/string_utils.h"
 #include "../query/query_utils.h"
+#include <concepts>
 #include <filesystem>
 
 
@@ -663,16 +664,55 @@ a split output
       } // add record func
 
 
-    static void process_where_clause(const std::string& query_text)
+    void process_where_clause(const std::string& query_text)
       {
         std::cout << query_text << std::endl;
         std::string where_clause = query::get_where_clause(query_text);
-        const auto tokens = query::primary_where_clause_parser(where_clause);
-        for (auto& i : tokens)
+        std::vector<std::string> tokens{};
+        try
           {
-            std::cout << i  << std::endl;
+            tokens = query::primary_where_clause_parser(where_clause);
+            for (auto& i : tokens)
+              {
+                std::cout << i  << std::endl;
+
+              }
+          }
+        catch (const std::runtime_error& e)
+          {
+            std::cout << "Error parsing where clause tokens: " << e.what() << std::endl;
+            return;
+          }
+
+
+        /*
+         Value types need to be converted and looked at eventually since
+         some are int and some are str. Once that happens this function can return
+         for each search, the field it is filtering on and the range(all search values
+         have a range) using functions in string_utils.h
+
+         */
+
+        if (tokens.size() == 3)
+          {// equality, prefix, inequality | int or str
+
+            if constexpr (std::same_as<IndexDataType, int>)
+              {
+                std::cout << ""  << std::endl;
+
+              }
+            else
+              {
+
+              }
 
           }
+        if (tokens.size() == 5)
+          {// between | int only
+
+          }
+
+
 
 
 
