@@ -22,6 +22,14 @@ namespace query
     const std::string &where_field;
     const InputDataType &start{};
     const InputDataType &end{};
+
+    std::string to_string()
+      {
+        std::string ret = "\n where field = " + where_field
+        + " start value = " + std::to_string(start)
+        + " end value = " + std::to_string(end);
+        return ret;
+      }
     };
 
   std::vector<std::string> get_clause_tokens(std::string &input)
@@ -67,17 +75,13 @@ namespace query
     }
 
 
-
   const static std::string trim_leading(std::string where_clause)
     {
-
-
       const std::string all_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
       size_t start_pos = where_clause.find_first_of(all_chars);
-      std::cout << start_pos  << std::endl;
+      std::cout << start_pos << std::endl;
       return where_clause.substr(start_pos, where_clause.size());
-
     }
 
   std::string get_where_clause(std::string query_text)
@@ -89,8 +93,6 @@ namespace query
           throw std::runtime_error("where clause not found");
         }
       return trim_leading(query_text.substr(where_pos + sep.size()));
-
-
     }
 
   std::vector<std::string> primary_where_clause_parser(std::string &where_clause)
@@ -173,7 +175,6 @@ namespace query
       if (where_clause.find(wildcard) != std::string::npos && where_clause.find(equality) !=
           std::string::npos)
         {
-
           result_token_vector = get_clause_tokens(where_clause);
           result_token_vector.insert(result_token_vector.begin(), "prefix");
           return result_token_vector;
@@ -181,7 +182,6 @@ namespace query
       if (where_clause.find(equality) != std::string::npos)
         {
           {
-
             result_token_vector = get_clause_tokens(where_clause);
             result_token_vector.insert(result_token_vector.begin(), "exact");
             return result_token_vector;

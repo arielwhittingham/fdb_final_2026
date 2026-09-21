@@ -678,10 +678,10 @@ a split output
         try
           {
             tokens = query::primary_where_clause_parser(where_clause);
-            // for (auto &i: tokens)
-            //   {
-            //     std::cout << i << std::endl;
-            //   }
+            for (auto &i: tokens)
+              {
+                std::cout << i << std::endl;
+              }
           } catch (const std::runtime_error &e)
             {
               std::cout << "Error parsing where clause tokens: " << e.what() << std::endl;
@@ -699,7 +699,7 @@ a split output
 
         if (tokens.size() == 6)
           {// between | int only
-            if  (__is_same(IndexDataType, uint32_t)) {
+            if constexpr (__is_same(IndexDataType, uint32_t)) {
                 if (tokens[0] == "between")
                   {
                     std::string &field_name = tokens[1];
@@ -717,7 +717,7 @@ a split output
         if (tokens.size() == 4)
           {
             // equality, prefix, inequality | int or str
-            if  (__is_same(IndexDataType, uint32_t))
+            if  constexpr (__is_same(IndexDataType, uint32_t))
               {//get range for these search types when field is int
                 if (tokens[0] == "exact")
                   {
@@ -761,7 +761,7 @@ a split output
 
 
               }
-            if constexpr (__is_same(IndexDataType, std::string))
+            if constexpr (__is_same(IndexDataType, utils::CharString))
               if (tokens[0] == "exact")
                 {
                   std::string &field_name = tokens[1];
@@ -819,8 +819,10 @@ int main()
     std::array<uint32_t, 14> left_new{};
     std::array<uint32_t, 14> right_new{};
 
-    Index::BPlusTreeManager<std::uint32_t>::process_where_clause(
-      "select * from tbl where field = 100");
+    auto x = Index::BPlusTreeManager<utils::CharString>::process_where_clause(
+      "select * from tbl where filename = 'dr%'");
+
+    // std::cout << x.to_string()  << std::endl;
 
     /*
 
