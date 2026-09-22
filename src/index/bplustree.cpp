@@ -93,11 +93,11 @@ If all elements in the range are smaller than the given value, it returns the en
               fs::perms::owner_all
             );
           } catch (fs::filesystem_error &e)
-            {
-              std::cerr << "filesystem error, can't make directory" << e.what() <<
-                  std::endl;
-              return;
-            }
+          {
+            std::cerr << "filesystem error, can't make directory" << e.what() <<
+                std::endl;
+            return;
+          }
         // create database file if not exists
         if (fs::exists(Struc::DB_FILE_NAME))
           {
@@ -632,7 +632,7 @@ a split output
 
 
         while (true)
-          /* keep splitting up from leaf intil top is reached*/
+        /* keep splitting up from leaf intil top is reached*/
           {
             uint32_t left_node_id = split_output.left_node_id_original;
             uint32_t right_node_id = split_output.right_node_id_new;
@@ -666,7 +666,8 @@ a split output
       } // add record func
 
 
-    static query::where_clause_range_object<IndexDataType> process_where_clause(const std::string &query_text)
+    static query::where_clause_range_object<IndexDataType> process_where_clause(
+      const std::string &query_text)
       {
         std::string start_range_string{""};
         std::string end_range_string{""};
@@ -683,9 +684,9 @@ a split output
                 std::cout << i << std::endl;
               }
           } catch (const std::runtime_error &e)
-            {
-              std::cout << "Error parsing where clause tokens: " << e.what() << std::endl;
-            }
+          {
+            std::cout << "Error parsing where clause tokens: " << e.what() << std::endl;
+          }
 
 
         /*
@@ -698,55 +699,66 @@ a split output
 
 
         if (tokens.size() == 6)
-          {// between | int only
-            if constexpr (__is_same(IndexDataType, uint32_t)) {
-                if (tokens[0] == "between")
+          { // between | int only
+            if constexpr (__is_same(IndexDataType, uint32_t))
+              {
+                if (tokens[0] == "range")
                   {
                     std::string &field_name = tokens[1];
-                    start_range_uint32_t =  static_cast<uint32_t>(std::stoul(tokens[3]));
-                    end_range_uint32_t =  static_cast<uint32_t>(std::stoul(tokens[5]));
+                    start_range_uint32_t = static_cast<uint32_t>(std::stoul(tokens[3]));
+                    end_range_uint32_t = static_cast<uint32_t>(std::stoul(tokens[5]));
+
+                    std::cout <<  "\n start and end of range below: " << std::endl;
+
+                    {
+                      for (auto & x : tokens) std::cout << x << std::endl;
+                    }
+
+                    std::cout << start_range_uint32_t  << std::endl;
+                    std::cout << end_range_uint32_t  << std::endl;
+                    std::cout << "\n "  << std::endl;
+
+
                     query::where_clause_range_object<IndexDataType> rng = {
-                      .where_field = field_name,
-                      .start = start_range_uint32_t,
-                      .end = end_range_uint32_t
+                    .where_field = field_name,
+                    .start = start_range_uint32_t,
+                    .end = end_range_uint32_t
                     };
                     return rng;
                   }
-            }
+              }
           }
         if (tokens.size() == 4)
           {
             // equality, prefix, inequality | int or str
-            if  constexpr (__is_same(IndexDataType, uint32_t))
-              {//get range for these search types when field is int
+            if constexpr (__is_same(IndexDataType, uint32_t))
+              { //get range for these search types when field is int
                 if (tokens[0] == "exact")
                   {
                     std::string &field_name = tokens[1];
-                    uint32_t start_range_uint32_t =  static_cast<uint32_t>(std::stoul(tokens[3]));
-                    uint32_t end_range_uint32_t =  start_range_uint32_t + 1;
+                    uint32_t start_range_uint32_t = static_cast<uint32_t>(std::stoul(tokens[3]));
+                    uint32_t end_range_uint32_t = start_range_uint32_t + 1;
                     query::where_clause_range_object<IndexDataType> rng = {
                       .where_field = field_name,
                       .start = start_range_uint32_t,
                       .end = end_range_uint32_t
-                    };
+                      };
                     return rng;
-
-
                   }
                 if (tokens[0] == "inequality")
                   {
                     std::string &field_name = tokens[1];
-                    uint32_t input_val =  static_cast<uint32_t>(std::stoul(tokens[3]));
+                    uint32_t input_val = static_cast<uint32_t>(std::stoul(tokens[3]));
                     uint32_t start_range{};
                     uint32_t end_range{};
-                    if (tokens[3] == "<")
+                    if (tokens[2] == "<")
                       {
                         start_range_uint32_t = 0;
-                        end_range_uint32_t = input_val;
+                        end_range_uint32_t = input_val - 1;
                       }
                     else
                       {
-                        start_range_uint32_t = input_val;
+                        start_range_uint32_t = input_val + 1;
                         end_range_uint32_t = UINT32_MAX;
                       }
 
@@ -754,51 +766,56 @@ a split output
                       .where_field = field_name,
                       .start = start_range_uint32_t,
                       .end = end_range_uint32_t
-                    };
+                      };
                     return rng;
-
                   }
-
-
               }
             if constexpr (__is_same(IndexDataType, utils::CharString))
-              if (tokens[0] == "exact")
-                {
-                  std::string &field_name = tokens[1];
-                  std::tuple<utils::CharString, utils::CharString> range_generated= utils::range_from_text_search_exact_match(tokens[3]);
-                  query::where_clause_range_object<IndexDataType> rng = {
-                    .where_field = field_name,
-                    .start = std::get<0>(range_generated),
-                    .end = std::get<1>(range_generated)
-                  };
-                  return rng;
-                  if (tokens[0] == "prefix")
-                    {
-                      std::string &field_name = tokens[1];
-                      std::tuple<utils::CharString, utils::CharString> range_generated= utils::range_from_text_search_prefix(tokens[3]);
-                      query::where_clause_range_object<IndexDataType> rng = {
-                        .where_field = field_name,
-                        .start = std::get<0>(range_generated),
-                        .end = std::get<1>(range_generated)
+              {
+                if (tokens[0] == "exact")
+                  {
+                    std::string &field_name = tokens[1];
+                    std::tuple<utils::CharString, utils::CharString> range_generated =
+                        utils::range_from_text_search_exact_match(tokens[3]);
+                    query::where_clause_range_object<IndexDataType> rng = {
+                      .where_field = field_name,
+                      .start = std::get<0>(range_generated),
+                      .end = std::get<1>(range_generated)
                       };
-                      return rng;
-                    }
-                }
+
+                    return rng;
+                  }
+                if (tokens[0] == "prefix")
+                  {
+                    std::string &field_name = tokens[1];
+                    std::tuple<utils::CharString, utils::CharString> range_generated =
+                        utils::range_from_text_search_prefix(tokens[3]);
+                    query::where_clause_range_object<IndexDataType> rng = {
+                      .where_field = field_name,
+                      .start = std::get<0>(range_generated),
+                      .end = std::get<1>(range_generated)
+                      };
+                    return rng;
+                  }
+              }
           }
-        std::string err ="Can't process where clause: " + where_clause;
-        throw std::runtime_error(err);
+        std::string err = "Can't process where clause: " + where_clause;
+        throw std::runtime_error (err);
       }
 
-        // void return_range_from_value;
 
-        /*std::vector<uint32_t>*/
-        // void return_matching_record_ids(IndexDataType &search_record)
-        //   {
-        //   }
 
-        // void verify_node
-      }; // class
-    } //namespace
+
+  // void return_range_from_value;
+
+  /*std::vector<uint32_t>*/
+  // void return_matching_record_ids(IndexDataType &search_record)
+  //   {
+  //   }
+
+  // void verify_node
+  }; // class
+} //namespace
 
 
 //func main
@@ -819,10 +836,11 @@ int main()
     std::array<uint32_t, 14> left_new{};
     std::array<uint32_t, 14> right_new{};
 
-    auto x = Index::BPlusTreeManager<utils::CharString>::process_where_clause(
-      "select * from tbl where filename = 'dr%'");
+    query::where_clause_range_object<std::uint32_t> x = Index::BPlusTreeManager<std::uint32_t>::process_where_clause(
+      "select * from tbl where filename < 100");
 
-    // std::cout << x.to_string()  << std::endl;
+
+    std::cout << x.to_string()  << std::endl;
 
     /*
 

@@ -1,10 +1,11 @@
 #include <array>
 #include <vector>
 #include <iostream>
-# include <format>
+#include <format>
 #include "../utils/string_utils.h"
 #include <string>
 #include <string_view>
+#include <format>
 #include <stdexcept>
 
 
@@ -15,19 +16,31 @@ namespace query
    query that is parsed for inputs to the B+tree. So far there will only be one
    table of the all files and their chosed metadata
    */
+  using CharString =  std::array<char,255>;
 
-  template<typename InputDataType>
+  template<typename IndexDataType>
   struct where_clause_range_object
     {
-    const std::string &where_field;
-    const InputDataType &start{};
-    const InputDataType &end{};
+    const std::string where_field;
+    const IndexDataType start{};
+    const IndexDataType end{};
 
     std::string to_string()
       {
-        std::string ret = "\n where field = " + where_field
-        + " start value = " + std::to_string(start)
-        + " end value = " + std::to_string(end);
+
+        if constexpr (__is_same(IndexDataType, uint32_t))
+          {
+            std::string ret  = std::format("\n where field = {}; start = {}; end = {};", where_field,start,end);
+            return ret;
+          }
+        if constexpr (__is_same(IndexDataType, CharString))
+          {
+            std::string ret  = std::format("\n where field = {}; start = {}; end = {};", where_field);
+            return ret;
+          }
+        // + " start value = " + std::to_string(start);
+        // + " end value = " + std::to_string(end);
+        std::string ret  = std::format("\n No formatter for input type for this where clause field = {};", where_field);
         return ret;
       }
     };
