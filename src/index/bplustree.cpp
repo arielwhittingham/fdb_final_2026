@@ -668,8 +668,10 @@ a split output
 
 
     static query::where_clause_range_object<IndexDataType> process_where_clause(
-      const std::string &query_text)
+      const std::string &qt)
       {
+        std::string query_text(qt);
+        std::erase(query_text, '\'');
         std::string start_range_string{""};
         std::string end_range_string{""};
         std::uint32_t start_range_uint32_t = 0;
@@ -806,15 +808,41 @@ a split output
     // void return_range_from_value;
 
     /*std::vector<uint32_t>*/
-    std::vector<uint32_t> return_matching_record_ids(const IndexDataType &search_record)
+    std::vector<uint32_t> return_matching_record_ids(std::string_view query)
       {
+        query::where_clause_range_object<IndexDataType> search_range = process_where_clause(std::string(query));
+
+        std::vector<uint32_t> output_ids{};
+
+        const IndexDataType start_search_record = search_range.start;
+        const IndexDataType end_search_record = search_range.end;
+
+
+
         /*
 
            1.
          */
-        uint32_t start_leaf = find_leaf_from_record_val(create_search_record_from_field_value(search_record));
+        uint32_t start_leaf = find_leaf_from_record_val(create_search_record_from_field_value(start_search_record));
 
-        while ()
+        auto end_range = create_search_record_from_field_value(search_range.end);
+
+        while (start_leaf == Struc::invalid_page_id)
+          {
+            auto &acquired_page = return_page_by_id(start_leaf);
+            auto end_it = acquired_page.records.begin() + acquired_page.filled_slots;
+            auto check_iterator = lower_bound(acquired_page.records.begin(), end_it, create_search_record_from_field_value(end_search_record),Record::less_than_comparator);
+
+            for (std::size_t ind = 0; check_iterator != end_it; ++check_iterator)
+              {
+                if (Record::less_than_comparator(*check_iterator, end_range))
+                  {
+                    output_ids.push_back(check_iterator->record_id);
+                  }
+                return output_ids;
+              }
+            start_leaf = acquired_page.next_leaf_id;
+          }
 
 
         std::cout << start_leaf << std::endl;
@@ -929,8 +957,12 @@ int main()
     ////-------------------------------------------------------------------
     ////-------------------------------------------------------------------
 
+    std::string input_query  = "select * from tbl where field = 'a_a_Velvet.txt'";
+    auto opp = bptree_2.return_matching_record_ids(std::string_view(input_query.data()));
 
-    bptree_2.return_matching_record_ids(utils::convert_string_view_to_char_array("ggffa_a_small.sql"));
+    std::cout << opp.data()  << std::endl;
+
+
 
     return 0;
   }
