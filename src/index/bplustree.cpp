@@ -817,36 +817,28 @@ a split output
         const IndexDataType start_search_record = search_range.start;
         const IndexDataType end_search_record = search_range.end;
 
-
-
-        /*
-
-           1.
-         */
         uint32_t start_leaf = find_leaf_from_record_val(create_search_record_from_field_value(start_search_record));
 
         auto end_range = create_search_record_from_field_value(search_range.end);
 
-        while (start_leaf == Struc::invalid_page_id)
+        while (start_leaf != Struc::invalid_page_id)
           {
             auto &acquired_page = return_page_by_id(start_leaf);
             auto end_it = acquired_page.records.begin() + acquired_page.filled_slots;
-            auto check_iterator = lower_bound(acquired_page.records.begin(), end_it, create_search_record_from_field_value(end_search_record),Record::less_than_comparator);
+            auto check_iterator = lower_bound(acquired_page.records.begin(), end_it, create_search_record_from_field_value(start_search_record),Record::less_than_comparator);
 
-            for (std::size_t ind = 0; check_iterator != end_it; ++check_iterator)
+            for (; check_iterator != end_it; ++check_iterator)
               {
-                if (Record::less_than_comparator(*check_iterator, end_range))
-                  {
-                    output_ids.push_back(check_iterator->record_id);
-                  }
-                return output_ids;
+                if (!Record::less_than_comparator(*check_iterator, end_range))
+                  return output_ids;
+
+                output_ids.push_back(check_iterator->record_id);
               }
+
             start_leaf = acquired_page.next_leaf_id;
+
           }
-
-
-        std::cout << start_leaf << std::endl;
-        return std::vector<uint32_t>{};
+        return output_ids;
       }
 
 
@@ -960,7 +952,7 @@ int main()
     std::string input_query  = "select * from tbl where field = 'a_a_Velvet.txt'";
     auto opp = bptree_2.return_matching_record_ids(std::string_view(input_query.data()));
 
-    std::cout << opp.data()  << std::endl;
+    std::cout <<  " size " << opp.size() << " val " << opp[0]  << std::endl;
 
 
 
