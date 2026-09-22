@@ -809,9 +809,15 @@ a split output
   // void return_range_from_value;
 
   /*std::vector<uint32_t>*/
-  // void return_matching_record_ids(IndexDataType &search_record)
-  //   {
-  //   }
+  void return_matching_record_ids(IndexDataType &search_record)
+    {
+        /* TM:
+         * 1. Get the range search record ID return logic working
+         * 2. Finalize Crawler
+         */
+      std::cout << "Take the search record sd" << std::endl;
+
+    }
 
   // void verify_node
   }; // class
