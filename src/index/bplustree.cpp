@@ -6,6 +6,7 @@
 #include "structs_bplustree.h"
 #include "input_generator.cpp"
 #include <string>
+#include <string_view>
 #include <cxxabi.h>
 #include <cstdint>
 #include <algorithm>
@@ -708,15 +709,13 @@ a split output
                     start_range_uint32_t = static_cast<uint32_t>(std::stoul(tokens[3]));
                     end_range_uint32_t = static_cast<uint32_t>(std::stoul(tokens[5]));
 
-                    std::cout <<  "\n start and end of range below: " << std::endl;
-
-                    {
-                      for (auto & x : tokens) std::cout << x << std::endl;
+                    std::cout << "\n start and end of range below: " << std::endl; {
+                      for (auto &x: tokens) std::cout << x << std::endl;
                     }
 
-                    std::cout << start_range_uint32_t  << std::endl;
-                    std::cout << end_range_uint32_t  << std::endl;
-                    std::cout << "\n "  << std::endl;
+                    std::cout << start_range_uint32_t << std::endl;
+                    std::cout << end_range_uint32_t << std::endl;
+                    std::cout << "\n " << std::endl;
 
 
                     query::where_clause_range_object<IndexDataType> rng = {
@@ -739,10 +738,10 @@ a split output
                     uint32_t start_range_uint32_t = static_cast<uint32_t>(std::stoul(tokens[3]));
                     uint32_t end_range_uint32_t = start_range_uint32_t + 1;
                     query::where_clause_range_object<IndexDataType> rng = {
-                      .where_field = field_name,
-                      .start = start_range_uint32_t,
-                      .end = end_range_uint32_t
-                      };
+                    .where_field = field_name,
+                    .start = start_range_uint32_t,
+                    .end = end_range_uint32_t
+                    };
                     return rng;
                   }
                 if (tokens[0] == "inequality")
@@ -763,10 +762,10 @@ a split output
                       }
 
                     query::where_clause_range_object<IndexDataType> rng = {
-                      .where_field = field_name,
-                      .start = start_range_uint32_t,
-                      .end = end_range_uint32_t
-                      };
+                    .where_field = field_name,
+                    .start = start_range_uint32_t,
+                    .end = end_range_uint32_t
+                    };
                     return rng;
                   }
               }
@@ -778,10 +777,10 @@ a split output
                     std::tuple<utils::CharString, utils::CharString> range_generated =
                         utils::range_from_text_search_exact_match(tokens[3]);
                     query::where_clause_range_object<IndexDataType> rng = {
-                      .where_field = field_name,
-                      .start = std::get<0>(range_generated),
-                      .end = std::get<1>(range_generated)
-                      };
+                    .where_field = field_name,
+                    .start = std::get<0>(range_generated),
+                    .end = std::get<1>(range_generated)
+                    };
 
                     return rng;
                   }
@@ -791,37 +790,41 @@ a split output
                     std::tuple<utils::CharString, utils::CharString> range_generated =
                         utils::range_from_text_search_prefix(tokens[3]);
                     query::where_clause_range_object<IndexDataType> rng = {
-                      .where_field = field_name,
-                      .start = std::get<0>(range_generated),
-                      .end = std::get<1>(range_generated)
-                      };
+                    .where_field = field_name,
+                    .start = std::get<0>(range_generated),
+                    .end = std::get<1>(range_generated)
+                    };
                     return rng;
                   }
               }
           }
         std::string err = "Can't process where clause: " + where_clause;
-        throw std::runtime_error (err);
+        throw std::runtime_error(err);
       }
 
 
+    // void return_range_from_value;
 
+    /*std::vector<uint32_t>*/
+    std::vector<uint32_t> return_matching_record_ids(const IndexDataType &search_record)
+      {
+        /*
 
-  // void return_range_from_value;
-
-  /*std::vector<uint32_t>*/
-  void return_matching_record_ids(IndexDataType &search_record)
-    {
-        /* TM:
-         * 1. Get the range search record ID return logic working
-         * 2. Finalize Crawler
+           1.
          */
-      std::cout << "Take the search record sd" << std::endl;
+        uint32_t start_leaf = find_leaf_from_record_val(create_search_record_from_field_value(search_record));
 
-    }
+        while ()
 
-  // void verify_node
-  }; // class
-} //namespace
+
+        std::cout << start_leaf << std::endl;
+        return std::vector<uint32_t>{};
+      }
+
+
+    // void verify_node
+    }; // class
+  } //namespace
 
 
 //func main
@@ -842,13 +845,13 @@ int main()
     std::array<uint32_t, 14> left_new{};
     std::array<uint32_t, 14> right_new{};
 
-    query::where_clause_range_object<std::uint32_t> x = Index::BPlusTreeManager<std::uint32_t>::process_where_clause(
+    query::where_clause_range_object<std::uint32_t> x = Index::BPlusTreeManager<
+      std::uint32_t>::process_where_clause(
       "select * from tbl where filename < 100");
 
 
-    std::cout << x.to_string()  << std::endl;
+    std::cout << x.to_string() << std::endl;
 
-    /*
 
     Index::BPlusTreeManager<Struc::FileNameDataType> bptree_2("test");
 
@@ -869,7 +872,14 @@ int main()
             // std::cout << numcol <<  col_2_original << std::endl;
             std::array<char, 255> name_array{};
             std::size_t data_len = col_2_original.copy(name_array.data(), 254);
+            if (name_array[data_len - 1] == '\r' || name_array[data_len - 1] == '\n' || name_array[
+                  data_len - 1] == ' ')
+              {
+                name_array[data_len - 1] = '\0';;
+                std::cout << " TRAILING CHAR " << name_array.data() << std::endl;
+              }
             name_array[data_len] = '\0';
+
 
             Struc::IndexRecord<Struc::FileNameDataType> test_record{
             static_cast<uint32_t>(numcol), name_array
@@ -880,16 +890,48 @@ int main()
     // const std::string_view search_val =  "gga_a_very.csv";
     // bptree_2.debug_whole_tree();
     std::cout << "DONE" << std::endl;
-    std::array<char, 255> conv = utils::convert_string_view_to_char_array<255>(
-      255, "a_a_crystalline.txt");
-    auto real_dummy_record = Struc::IndexRecord<Struc::FileNameDataType>{59, "a_a_crystalline.txt"};
+
+
+    std::array<char, 255> conv = utils::convert_string_view_to_char_array(
+      "gga_zzz.txt");
+
+    auto real_dummy_record = Struc::IndexRecord<Struc::FileNameDataType>{0, "gga_zzz.txt"};
     auto real = bptree_2.find_leaf_from_record_val(real_dummy_record);
     auto res = bptree_2.get_leaf_from_search_value(conv);
     bptree_2.debug_whole_tree();
-    std::cout << "based on new logic leaf node number for   a_a_crystalline.txt: " << res << std::endl;
-    std::cout << "Real for descender, diff than the searcher because this needs to"
-                 "say where this record should be added in the data.  a_a_crystalline.txt: " << real << std::endl;
-*/
+    std::cout << "based on get_leaf_from_search_value: " << res << std::endl;
+    std::cout << "based on find_leaf_from_record_val: " << real << std::endl;
+
+
+    auto hex = [](const auto &arr, std::size_t n)
+      {
+      std::ostringstream o;
+      for (std::size_t i = 0; i < n; ++i)
+        o << std::setw(2) << std::setfill('0') << std::hex
+            << (unsigned) (unsigned char) arr[i] << ' ';
+      return o.str();
+      };
+
+    // the one you built
+    std::cout << "dummy:  " << hex(real_dummy_record.field_value, 19) << "\n";
+
+    // the one in the tree — node 21, record 0
+    std::cout << "stored: " << hex(
+      bptree_2.return_page_by_id(21).records[0].field_value, 32) << "\n";
+
+
+
+
+
+
+
+    ////-------------------------------------------------------------------
+    ////-------------------------------------------------------------------
+    ////-------------------------------------------------------------------
+
+
+    bptree_2.return_matching_record_ids(utils::convert_string_view_to_char_array("ggffa_a_small.sql"));
+
     return 0;
   }
 

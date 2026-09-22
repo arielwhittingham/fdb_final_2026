@@ -9,8 +9,7 @@ namespace utils
   {
   using CharString =  std::array<char,255>;
 
-  CharString convert_string_view_to_char_array(
-                                                        std::string_view input_string)
+  CharString convert_string_view_to_char_array(std::string_view input_string)
     {
       CharString target_char_array{};
       static constexpr std::size_t total_array_size = 255;

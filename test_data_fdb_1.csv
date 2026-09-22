@@ -32,7 +32,7 @@ record_id,field_value
 99,ffa_a_Marble.txt
 100,ffa_a_Horizon.txt
 101,ffa_a_portable.txt
-102,"ffa_a_light,.txt"
+102,ffa_a_light.txt
 103,ffa_a_closely.txt
 104,ffa_a_speak.txt
 105,ffa_a_deep.txt
@@ -62,7 +62,7 @@ record_id,field_value
 129,gga_Marble.txt
 130,gga_Horizon.txt
 131,gga_portable.txt
-132,"gga_light,.txt"
+132,gga_light.txt
 133,gga_closely.txt
 134,gga_speak.txt
 135,gga_deep.txt
@@ -100,7 +100,7 @@ record_id,field_value
 9,a_Marble.txt
 10,a_Horizon.txt
 11,a_portable.txt
-12,"a_light,.txt"
+12,a_light.txt
 13,a_Horizon.txt
 14,a_speak.txt
 15,a_deep.txt
@@ -130,7 +130,7 @@ record_id,field_value
 39,a_a_Marble.txt
 40,a_a_Horizon.txt
 41,a_a_portable.txt
-42,"a_a_light,.txt"
+42,a_a_light.txt
 43,a_a_closely.txt
 44,a_a_speak.txt
 45,a_a_deep.txt
@@ -160,7 +160,7 @@ record_id,field_value
 159,gga_a_Marble.csv
 160,gga_a_Horizon.csv
 161,gga_a_portable.csv
-162,"gga_a_light,.csv"
+162,gga_a_light.csv
 163,gga_a_closely.csv
 164,gga_a_speak.csv
 165,gga_a_deep.csv
@@ -190,7 +190,7 @@ record_id,field_value
 189,ggffa_Marble.csv
 190,ggffa_Horizon.csv
 191,ggffa_portable.csv
-192,"ggffa_light,.csv"
+192,ggffa_light.csv
 193,ggffa_closely.csv
 194,ggffa_speak.csv
 195,ggffa_deep.csv
@@ -220,7 +220,7 @@ record_id,field_value
 440,ggffa_a_Marble.sql
 452,ggffa_a_Horizon.sql
 464,ggffa_a_portable.sql
-476,"ggffa_a_light,.sql"
+476,ggffa_a_light.sql
 488,ggffa_a_closely.sql
 500,ggffa_a_speak.sql
 512,ggffa_a_deep.sql
