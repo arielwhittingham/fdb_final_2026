@@ -147,7 +147,7 @@ If all elements in the range are smaller than the given value, it returns the en
         };
         filestream.open(
           Struc::DB_FILE_NAME,
-          std::ios::binary | std::ios::in | std::ios::out);
+          std::ios::binary | std::ios::app | std::ios::out);
         filestream.write(
           reinterpret_cast<const char *>(&full_record),
           sizeof(full_record));
@@ -158,16 +158,21 @@ If all elements in the range are smaller than the given value, it returns the en
         return new_record_id;
       }
 
-    void read_from_file_to_memory(uint32_t record_id)
+    Struc::StorageRecord read_from_file_to_memory(uint32_t record_id)
       {
-        {
-          filestream.open(
-            Struc::DB_FILE_LOCATION,
-            std::ios::binary | std::ios::in | std::ios::out);
-        }
 
-        std::streamoff offset_len  =std::streamoff(record_id * sizeof(Struc::StorageRecord));
+        Struc::StorageRecord storage_record{};
+        uint32_t index_of_record_id= record_id -1;
+        std::ifstream local_filestream(Struc::DB_FILE_NAME,std::ios::binary | std::ios::in);
+
+        std::streamoff offset_len  = static_cast<std::streamoff>(std::streamoff(index_of_record_id * sizeof(Struc::StorageRecord)));
         std::cout <<  offset_len << std::endl;
+        local_filestream.seekg(offset_len, std::ios::beg);
+        local_filestream.read(reinterpret_cast<char*>(&storage_record), sizeof(Struc::StorageRecord));
+          std::cout <<  storage_record.to_string() << std::endl;
+        local_filestream.good();
+        return storage_record;
+
 
       }
     };
@@ -867,50 +872,58 @@ a split output
 //func main
 int main()
   {
-    schema::FileRecord test_file_record_8{
+    schema::FileRecord test_file_record_1{
     .inode = 46,
     .parent_inode = 1,
     .created_timestamp = 548721,
     .size_bytes = 8,
     .mode = 321,
     .type{"sql"},
-    .file_name = {"ag.sql"}
+    .file_name = {"hello.sql"}
     };
 
-    Struc::StorageRecord storage_record_8;
 
-    Index::BufferManager buff{};
-
-    std::cout << buff.dir << std::endl;
-    buff.write_full_record_to_file(test_file_record_8);
-
-
-
-    schema::FileRecord test_file_record_9{
+    schema::FileRecord test_file_record_2{
     .inode = 14,
     .parent_inode = 1,
     .created_timestamp = 548721,
     .size_bytes = 8,
     .mode = 321,
-    .type{"sql"},
-    .file_name = {"ggzquil.sql"}
+    .type{"txt"},
+    .file_name = {"byeee.txt"}
     };
 
 
-    schema::FileRecord test_file_record_10{
+    schema::FileRecord test_file_record_3{
     .inode = 12,
     .parent_inode = 1,
     .created_timestamp = 548721,
     .size_bytes = 8,
     .mode = 321,
-    .type{"sql"},
-    .file_name = {"1zquil.sql"}
+    .type{"csv"},
+    .file_name = {"dit.csv"}
     };
 
 
-    Struc::IndexRecord test_record_8{8, test_file_record_8.file_name};
-    Struc::IndexRecord test_record_9{9, test_file_record_9.file_name};
-    Struc::IndexRecord test_record_10{10, test_file_record_10.file_name};
+    Index::BufferManager buff{};
+
+    std::cout << buff.dir << std::endl;
+    buff.write_full_record_to_file(test_file_record_1);
+    buff.write_full_record_to_file(test_file_record_2);
+    buff.write_full_record_to_file(test_file_record_3);
+
+    buff.read_from_file_to_memory(1);
+    // std::cout << " rec1 "  << std::endl;
+    buff.read_from_file_to_memory(2);
+    // std::cout << " rec2 "  << std::endl;
+    buff.read_from_file_to_memory(3);
+    // std::cout << " rec2 "  << std::endl;
+
+
+
+    // Struc::IndexRecord test_record_8{8, test_file_record_8.file_name};
+    // Struc::IndexRecord test_record_9{9, test_file_record_9.file_name};
+    // Struc::IndexRecord test_record_10{10, test_file_record_10.file_name};
 
 
     // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;

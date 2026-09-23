@@ -31,7 +31,7 @@ namespace Struc
 
   //------------------------Record Management------------------------------------------------
 
-
+#pragma pack(push, 1)
   struct StorageRecord
     {
     uint32_t record_id;
@@ -46,6 +46,7 @@ namespace Struc
             row.to_string();
       }
     };
+#pragma pack(pop)
 
   //------------------------B+Tree Management------------------------------------------------
 

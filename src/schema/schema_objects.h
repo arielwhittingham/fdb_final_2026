@@ -3,7 +3,7 @@
 #include <array>
 #include <string>
 
-#pragma once
+#pragma pack(push, 1)
 
 namespace schema {
     struct FileRecord {
@@ -13,7 +13,7 @@ namespace schema {
         std::uint64_t size_bytes; // off_t
         std::uint16_t mode; // access_mask..?
         std::array<char, 20> type; //make this into an enum
-        std::array<char, 255> file_name; // keeping last to align memory efficiently
+        std::array<char, 255> file_name{}; // keeping last to align memory efficiently
 
 
         std::string to_string() const {
@@ -29,3 +29,5 @@ namespace schema {
     };
 
 }
+
+#pragma pack(pop)
