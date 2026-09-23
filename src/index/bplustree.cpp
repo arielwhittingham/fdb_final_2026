@@ -94,17 +94,19 @@ If all elements in the range are smaller than the given value, it returns the en
               fs::perms::owner_all
             );
           } catch (fs::filesystem_error &e)
-          {
-            std::cerr << "filesystem error, can't make directory" << e.what() <<
-                std::endl;
-            return;
-          }
+            {
+              std::cerr << "filesystem error, can't make directory" << e.what() <<
+                  std::endl;
+              return;
+            }
         // create database file if not exists
         if (fs::exists(Struc::DB_FILE_NAME))
           {
             fs::remove(Struc::DB_FILE_NAME);
             std::ofstream touch(Struc::DB_FILE_NAME, std::ios::binary);
           }
+
+
         else
           {
             std::ofstream touch(Struc::DB_FILE_NAME, std::ios::binary);
@@ -134,28 +136,39 @@ If all elements in the range are smaller than the given value, it returns the en
       }
 
 
-    uint32_t write_record_to_file(Struc::StorageRecord &record)
+    uint32_t write_full_record_to_file(const schema::FileRecord &full_record_no_record_id)
       {
         uint32_t new_record_id = this->create_new_record_id();
         this->records.push_back(new_record_id);
+        Struc::StorageRecord full_record
+        {
+        .record_id = new_record_id,
+        .row = full_record_no_record_id
+        };
         filestream.open(
           Struc::DB_FILE_NAME,
           std::ios::binary | std::ios::in | std::ios::out);
         filestream.write(
-          reinterpret_cast<const char *>(&record),
-          sizeof(record));
-        std::cout << "\n wrote page #: " << record.to_string() << "\n";
+          reinterpret_cast<const char *>(&full_record),
+          sizeof(full_record));
+        std::cout << "\n wrote record #: " << full_record.to_string() << "\n";
         std::cout << "\n recordcount /  new record created: " << new_record_id <<
             "\n";
         filestream.close();
         return new_record_id;
       }
 
-    void read_from_file_to_memory(uint32_t page_number)
+    void read_from_file_to_memory(uint32_t record_id)
       {
-        filestream.open(
-          Struc::DB_FILE_LOCATION,
-          std::ios::binary | std::ios::in | std::ios::out);
+        {
+          filestream.open(
+            Struc::DB_FILE_LOCATION,
+            std::ios::binary | std::ios::in | std::ios::out);
+        }
+
+        std::streamoff offset_len  =std::streamoff(record_id * sizeof(Struc::StorageRecord));
+        std::cout <<  offset_len << std::endl;
+
       }
     };
 
@@ -810,14 +823,16 @@ a split output
     /*std::vector<uint32_t>*/
     std::vector<uint32_t> return_matching_record_ids(std::string_view query)
       {
-        query::where_clause_range_object<IndexDataType> search_range = process_where_clause(std::string(query));
+        query::where_clause_range_object<IndexDataType> search_range = process_where_clause(
+          std::string(query));
 
         std::vector<uint32_t> output_ids{};
 
         const IndexDataType start_search_record = search_range.start;
         const IndexDataType end_search_record = search_range.end;
 
-        uint32_t start_leaf = find_leaf_from_record_val(create_search_record_from_field_value(start_search_record));
+        uint32_t start_leaf = find_leaf_from_record_val(
+          create_search_record_from_field_value(start_search_record));
 
         auto end_range = create_search_record_from_field_value(search_range.end);
 
@@ -825,7 +840,10 @@ a split output
           {
             auto &acquired_page = return_page_by_id(start_leaf);
             auto end_it = acquired_page.records.begin() + acquired_page.filled_slots;
-            auto check_iterator = lower_bound(acquired_page.records.begin(), end_it, create_search_record_from_field_value(start_search_record),Record::less_than_comparator);
+            auto check_iterator = lower_bound(
+              acquired_page.records.begin(), end_it,
+              create_search_record_from_field_value(start_search_record),
+              Record::less_than_comparator);
 
             for (; check_iterator != end_it; ++check_iterator)
               {
@@ -836,7 +854,6 @@ a split output
               }
 
             start_leaf = acquired_page.next_leaf_id;
-
           }
         return output_ids;
       }
@@ -850,21 +867,63 @@ a split output
 //func main
 int main()
   {
-    // logic for inserting into a vector and maintaining sorted order
-    std::vector<int> ff{4};
-    // std::array< int32_t, 5>
-    ff.push_back(6);
-    ff.push_back(7);
-    ff.push_back(9);
-    int tester{5};
-
-    //
-    std::array<uint32_t, 14> left_original{
-    16, 21, 30, 41, 50, 62, 72, 89, 90, 101, 110, 120, 130, 135
+    schema::FileRecord test_file_record_8{
+    .inode = 46,
+    .parent_inode = 1,
+    .created_timestamp = 548721,
+    .size_bytes = 8,
+    .mode = 321,
+    .type{"sql"},
+    .file_name = {"ag.sql"}
     };
-    std::array<uint32_t, 14> left_new{};
-    std::array<uint32_t, 14> right_new{};
 
+    Struc::StorageRecord storage_record_8;
+
+    Index::BufferManager buff{};
+
+    std::cout << buff.dir << std::endl;
+    buff.write_full_record_to_file(test_file_record_8);
+
+
+
+    schema::FileRecord test_file_record_9{
+    .inode = 14,
+    .parent_inode = 1,
+    .created_timestamp = 548721,
+    .size_bytes = 8,
+    .mode = 321,
+    .type{"sql"},
+    .file_name = {"ggzquil.sql"}
+    };
+
+
+    schema::FileRecord test_file_record_10{
+    .inode = 12,
+    .parent_inode = 1,
+    .created_timestamp = 548721,
+    .size_bytes = 8,
+    .mode = 321,
+    .type{"sql"},
+    .file_name = {"1zquil.sql"}
+    };
+
+
+    Struc::IndexRecord test_record_8{8, test_file_record_8.file_name};
+    Struc::IndexRecord test_record_9{9, test_file_record_9.file_name};
+    Struc::IndexRecord test_record_10{10, test_file_record_10.file_name};
+
+
+    // Struc::BPlusTreeNode<Struc::FileNameDataType> test_node;
+    /* ORIGINAL TESTER CODE
+
+        Index::BPlusTreeManager<Struc::FileNameDataType> bptree("test");
+        bptree.add_record(test_record_1);
+
+    Index::BufferManager buff;
+*/
+
+
+    /*
     query::where_clause_range_object<std::uint32_t> x = Index::BPlusTreeManager<
       std::uint32_t>::process_where_clause(
       "select * from tbl where filename < 100");
@@ -912,39 +971,32 @@ int main()
     std::cout << "DONE" << std::endl;
 
 
-    std::array<char, 255> conv = utils::convert_string_view_to_char_array(
-      "gga_zzz.txt");
-
-    auto real_dummy_record = Struc::IndexRecord<Struc::FileNameDataType>{0, "gga_zzz.txt"};
-    auto real = bptree_2.find_leaf_from_record_val(real_dummy_record);
-    auto res = bptree_2.get_leaf_from_search_value(conv);
-    bptree_2.debug_whole_tree();
-    std::cout << "based on get_leaf_from_search_value: " << res << std::endl;
-    std::cout << "based on find_leaf_from_record_val: " << real << std::endl;
-
-
-    auto hex = [](const auto &arr, std::size_t n)
-      {
-      std::ostringstream o;
-      for (std::size_t i = 0; i < n; ++i)
-        o << std::setw(2) << std::setfill('0') << std::hex
-            << (unsigned) (unsigned char) arr[i] << ' ';
-      return o.str();
-      };
-
-    // the one you built
-    std::cout << "dummy:  " << hex(real_dummy_record.field_value, 19) << "\n";
-
-    // the one in the tree — node 21, record 0
-    std::cout << "stored: " << hex(
-      bptree_2.return_page_by_id(21).records[0].field_value, 32) << "\n";
-
-
-
-
-
-
-
+    // std::array<char, 255> conv = utils::convert_string_view_to_char_array(
+    //   "gga_zzz.txt");
+    //
+    // auto real_dummy_record = Struc::IndexRecord<Struc::FileNameDataType>{0, "gga_zzz.txt"};
+    // auto real = bptree_2.find_leaf_from_record_val(real_dummy_record);
+    // auto res = bptree_2.get_leaf_from_search_value(conv);
+    // bptree_2.debug_whole_tree();
+    // std::cout << "based on get_leaf_from_search_value: " << res << std::endl;
+    // std::cout << "based on find_leaf_from_record_val: " << real << std::endl;
+    //
+    //
+    // auto hex = [](const auto &arr, std::size_t n)
+    //   {
+    //   std::ostringstream o;
+    //   for (std::size_t i = 0; i < n; ++i)
+    //     o << std::setw(2) << std::setfill('0') << std::hex
+    //         << (unsigned) (unsigned char) arr[i] << ' ';
+    //   return o.str();
+    //   };
+    //
+    // // the one you built
+    // std::cout << "dummy:  " << hex(real_dummy_record.field_value, 19) << "\n";
+    //
+    // // the one in the tree — node 21, record 0
+    // std::cout << "stored: " << hex(
+    //   bptree_2.return_page_by_id(21).records[0].field_value, 32) << "\n";
     ////-------------------------------------------------------------------
     ////-------------------------------------------------------------------
     ////-------------------------------------------------------------------
@@ -954,25 +1006,7 @@ int main()
 
     std::cout <<  " size " << opp.size() << " val " << opp[0]  << std::endl;
 
-
+    */
 
     return 0;
   }
-
-
-/*
-
-std::cout << d << std::endl;
-
-
-auto indval = std::lower_bound(ff.begin(), ff.end(), tester);
-auto ind = std::distance(ff.begin(), indval);
-std::cout << "sindex of " << tester << " = " << ind << "\n";
-ff.insert(indval, tester);
-
-for (auto &c: ff) {
-    std::cout << c << "\n";
-}
-
-return 0;
-*/
