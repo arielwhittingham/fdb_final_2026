@@ -61,215 +61,253 @@ namespace crawl {
     // void crawl_filesystem(const std::string&  starting_path) {
 
     void crawl_filesystem(const char *starting_path) {
-        while (true) {
-            attrlist attributes;
-            //buffer
-            char readinto[1024 * 64];
-            memset(&attributes, 0, sizeof(attributes));
 
-            // https://github.com/apple-oss-distributions/xnu/blob/main/bsd/man/man2/getattrlist.2
-            // ATTR list from apple^^
-
-            // attr.h structs: https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/attr.h
-
-            // file metadata categories that are filled
-            attributes.bitmapcount = ATTR_BIT_MAP_COUNT;
-
-            // common attributes for all files and dirs
-            // needs to align with the struct above?
-            attributes.commonattr =
-                    ATTR_CMN_RETURNED_ATTRS
-                    | ATTR_CMN_NAME
-                    | ATTR_CMN_OBJTYPE
-                    | ATTR_CMN_CRTIME
-                    | ATTR_CMN_ACCESSMASK
-                    // | ATTR_CMN_DOCUMENT_ID
-                    | ATTR_CMN_FILEID
-                    | ATTR_CMN_PARENTID;
-
-            attributes.fileattr =
-                    ATTR_FILE_TOTALSIZE;
-            // make sure starting path can open properly with the correct features
-            int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
-
-
-            std::cout << " status " << open_status << std::endl;
-            if (open_status == -1) {
-                std::cout << "cant open: " << *starting_path << std::endl;
-                return;
-            }
-
-            uint64_t options = 0;
-            int numatts;
-            // need to mov this inside a later while-loop
-            while ((numatts = getattrlistbulk(open_status,
-                                                &attributes,
-                                                &readinto[0],
-                                                sizeof(readinto),
-                                                options) ) > 0)
+        std::vector<std::string> directory_vec;
+        directory_vec.emplace_back(starting_path);
+        while (directory_vec.size() > 0)
             {
+                attrlist attributes;
+                //buffer
+                char readinto[1024 * 64];
+                memset(&attributes, 0, sizeof(attributes));
+
+                // https://github.com/apple-oss-distributions/xnu/blob/main/bsd/man/man2/getattrlist.2
+                // ATTR list from apple^^
+
+                // attr.h structs: https://github.com/apple-oss-distributions/xnu/blob/main/bsd/sys/attr.h
+
+                // file metadata categories that are filled
+                attributes.bitmapcount = ATTR_BIT_MAP_COUNT;
+
+                // common attributes for all files and dirs
+                // needs to align with the struct above?
+                attributes.commonattr =
+                        ATTR_CMN_RETURNED_ATTRS
+                        | ATTR_CMN_NAME
+                        | ATTR_CMN_OBJTYPE
+                        | ATTR_CMN_CRTIME
+                        | ATTR_CMN_ACCESSMASK
+                        // | ATTR_CMN_DOCUMENT_ID
+                        | ATTR_CMN_FILEID
+                        | ATTR_CMN_PARENTID;
+
+                attributes.fileattr =
+                        ATTR_FILE_TOTALSIZE;
+                // make sure starting path can open properly with the correct features
 
 
 
-                int entryindex{0};
-                auto bufferstart = &readinto[0];
-                char *value;
-                uint32_t data_length;
 
 
 
-                // loop through each returned bulkattrlist item
-                for (entryindex = 0; entryindex < numatts; entryindex++) {
-                    // entry length
-                    char *cursor = bufferstart;
-                    std::memcpy(&data_length, cursor, sizeof(data_length));
-                    cursor += sizeof(data_length);
-
-                    // returned attributes
-                    attribute_set_t returned_attrs{};
-                    std::memcpy(&returned_attrs, cursor, sizeof(returned_attrs));
-                    cursor += sizeof(returned_attrs);
-
-                    // ATTR_CMN_NAME -- this is the file name and its variable
-
-                    std::string filename;
-
-                    if (returned_attrs.commonattr & ATTR_CMN_NAME) {
-                        char *ref_location = cursor;
-                        attrreference_t name_ref{};
-                        std::memcpy(&name_ref, cursor, sizeof(name_ref));
-
-                        cursor += sizeof(name_ref);
-                        char *name_pointer = ref_location + name_ref.attr_dataoffset;
-                        filename.assign(name_pointer, name_ref.attr_length);
-
-                        // remove null at the end o the file name
-                        if (!filename.empty() && filename.back() == '\0') {
-                            filename.pop_back();
-                        }
-                    }
 
 
-                    fsobj_type_t object_type = 0;
-
-                    if (returned_attrs.commonattr & ATTR_CMN_OBJTYPE) {
-                        std::memcpy(&object_type, cursor, sizeof(object_type));
-                        cursor += sizeof(object_type);
-                    }
-
-                    // ATTR_CMN_CRTIME -- struct not just a single valu
 
 
-                    timespec crtime{};
-
-                    if (returned_attrs.commonattr & ATTR_CMN_CRTIME) {
-                        std::memcpy(&crtime, cursor, sizeof(crtime)
-                        );
-
-                        cursor += sizeof(crtime);
-                    }
 
 
-                    uint32_t permissions = 0;
-                    if (returned_attrs.commonattr & ATTR_CMN_ACCESSMASK) {
-                        std::memcpy(&permissions, cursor, sizeof(permissions));
-                        cursor += sizeof(permissions);
-                    }
-
-                    // remove document_id foor now
-                    // uint32_t document_id = 0;
-                    //
-                    // if (returned_attrs.commonattr & ATTR_CMN_DOCUMENT_ID) {
-                    //     std::memcpy(&document_id,cur,sizeof(document_id)
-                    //     );
-                    //
-                    //     cur += sizeof(document_id);
-                    // }
 
 
-                    // this is the inode
-                    // ATTR_CMN_FILEID
-
-                    uint64_t file_id = 0;
-                    if (returned_attrs.commonattr & ATTR_CMN_FILEID) {
-                        std::memcpy(
-                            &file_id,
-                            cursor,
-                            sizeof(file_id)
-                        );
-
-                        cursor += sizeof(file_id);
-                    }
-
-                    uint64_t parent_id = 0;
-
-                    if (returned_attrs.commonattr & ATTR_CMN_PARENTID) {
-                        std::memcpy(&parent_id, cursor, sizeof(parent_id)
-                        );
-                        cursor += sizeof(parent_id);
-                    }
 
 
-                    off_t total_size = 0;
-
-                    if (returned_attrs.fileattr & ATTR_FILE_TOTALSIZE) {
-                        std::memcpy(
-                            &total_size,
-                            cursor,
-                            sizeof(total_size)
-                        );
-
-                        cursor += sizeof(total_size);
-                    }
-
-                    std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
-                    std::cout << "num atts: " << numatts << "\n";
-                    std::cout << "  file size: " << sizeof(filename) << std::endl;
-                    std::cout << "  file: " << filename << std::endl;
-                    std::cout << "  file: " << file_id << std::endl;
-                    std::cout << "  size bytes " << total_size << std::endl;
-                    std::cout << " perms  " << permissions << std::endl;
-                    // std::cout << " doc_id  " <<document_id << std::endl;
-
-                    std::cout << " parent_inode  " << parent_id << std::endl;
-                    std::cout << "  seconds " << crtime.tv_sec << std::endl;
-                    std::cout << "  objtype " << object_type << std::endl;
 
 
-                    // -----DEBUG END-------
-                    // ---------------------
-                    // ----------------- Shift pointer tonext entry block -----------------
 
-                    bufferstart += data_length;
+                while (int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0))
+                    {
 
+                // int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
+
+
+                std::cout << " status " << open_status << std::endl;
+                std::cout << *starting_path << std::endl;
+
+                if (open_status == -1) {
+                        std::cout << "cant open: " << *starting_path << std::endl;
+                        return;
                 }
-                /*
-                 recursively crawl and write structs - OLD
-                 */
 
-                // DIR* starting_directory_pointer = opendir(starting_path);
-                // struct dirent* directory_list;
+                uint64_t options = 0;
+                int numatts;
+                // need to mov this inside a later while-loop
+                while ((numatts = getattrlistbulk(open_status,
+                                                    &attributes,
+                                                    &readinto[0],
+                                                    sizeof(readinto),
+                                                    options) ) > 0)
+                    {
 
-                // while (readdir(starting_directory_pointer) != nullptr) {
-                //     auto lst  = readdir(starting_directory_pointer);
-                /*
-                  parse file returned to get usefull metadata
-                */
-                std::cout << " Does this get hit? " << std::endl;
 
+
+
+                        auto bufferstart = &readinto[0];
+                        char *value;
+                        uint32_t data_length;
+                        uint32_t ct{0};
+
+
+
+                        // loop through each returned bulkattrlist item
+                        for (size_t entryindex = 0; entryindex < numatts; entryindex++) {
+                                ct++;
+                                // entry length
+                                char *cursor = bufferstart;
+                                std::memcpy(&data_length, cursor, sizeof(data_length));
+                                cursor += sizeof(data_length);
+
+                                // returned attributes
+                                attribute_set_t returned_attrs{};
+                                std::memcpy(&returned_attrs, cursor, sizeof(returned_attrs));
+                                cursor += sizeof(returned_attrs);
+
+                                // ATTR_CMN_NAME -- this is the file name and its variable
+
+                                std::string filename;
+
+                                if (returned_attrs.commonattr & ATTR_CMN_NAME) {
+                                        char *ref_location = cursor;
+                                        attrreference_t name_ref{};
+                                        std::memcpy(&name_ref, cursor, sizeof(name_ref));
+
+                                        cursor += sizeof(name_ref);
+                                        char *name_pointer = ref_location + name_ref.attr_dataoffset;
+                                        filename.assign(name_pointer, name_ref.attr_length);
+
+                                        // remove null at the end o the file name
+                                        if (!filename.empty() && filename.back() == '\0') {
+                                                filename.pop_back();
+                                        }
+                                }
+
+
+                                fsobj_type_t object_type = 0;
+
+                                if (returned_attrs.commonattr & ATTR_CMN_OBJTYPE) {
+                                        std::memcpy(&object_type, cursor, sizeof(object_type));
+                                        cursor += sizeof(object_type);
+                                }
+
+                                // ATTR_CMN_CRTIME -- struct not just a single valu
+
+
+                                timespec crtime{};
+
+                                if (returned_attrs.commonattr & ATTR_CMN_CRTIME) {
+                                        std::memcpy(&crtime, cursor, sizeof(crtime)
+                                        );
+
+                                        cursor += sizeof(crtime);
+                                }
+
+
+                                uint32_t permissions = 0;
+                                if (returned_attrs.commonattr & ATTR_CMN_ACCESSMASK) {
+                                        std::memcpy(&permissions, cursor, sizeof(permissions));
+                                        cursor += sizeof(permissions);
+                                }
+
+                                // remove document_id foor now
+                                // uint32_t document_id = 0;
+                                //
+                                // if (returned_attrs.commonattr & ATTR_CMN_DOCUMENT_ID) {
+                                //     std::memcpy(&document_id,cur,sizeof(document_id)
+                                //     );
+                                //
+                                //     cur += sizeof(document_id);
+                                // }
+
+
+                                // this is the inode
+                                // ATTR_CMN_FILEID
+
+                                uint64_t file_id = 0;
+                                if (returned_attrs.commonattr & ATTR_CMN_FILEID) {
+                                        std::memcpy(
+                                            &file_id,
+                                            cursor,
+                                            sizeof(file_id)
+                                        );
+
+                                        cursor += sizeof(file_id);
+                                }
+
+                                uint64_t parent_id = 0;
+
+                                if (returned_attrs.commonattr & ATTR_CMN_PARENTID) {
+                                        std::memcpy(&parent_id, cursor, sizeof(parent_id)
+                                        );
+                                        cursor += sizeof(parent_id);
+                                }
+
+
+                                off_t total_size = 0;
+
+                                if (returned_attrs.fileattr & ATTR_FILE_TOTALSIZE) {
+                                        std::memcpy(
+                                            &total_size,
+                                            cursor,
+                                            sizeof(total_size)
+                                        );
+
+                                        cursor += sizeof(total_size);
+                                }
+
+                                // std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
+                                // std::cout << "num atts: " << numatts << "\n";
+                                // std::cout << "  file size: " << sizeof(filename) << std::endl;
+                                std::cout << "  file: " << filename << std::endl;
+                                // std::cout << "  file: " << file_id << std::endl;
+                                // std::cout << "  size bytes " << total_size << std::endl;
+                                // std::cout << " perms  " << permissions << std::endl;
+                                // // std::cout << " doc_id  " <<document_id << std::endl;
+                                //
+                                // std::cout << " parent_inode  " << parent_id << std::endl;
+                                // std::cout << "  seconds " << crtime.tv_sec << std::endl;
+                                // std::cout << "  objtype " << object_type << std::endl;
+
+
+                                // -----DEBUG END-------
+                                // ---------------------
+                                // ----------------- Shift pointer tonext entry block -----------------
+
+                                bufferstart += data_length;
+
+                                if (ct > 10)
+                                    {
+                                        std::cout << " BREAK OUT "  << std::endl;
+
+                                        break;
+                                    }
+
+                        }
+                        /*
+                         recursively crawl and write structs - OLD
+                         */
+
+                        // DIR* starting_directory_pointer = opendir(starting_path);
+                        // struct dirent* directory_list;
+
+                        // while (readdir(starting_directory_pointer) != nullptr) {
+                        //     auto lst  = readdir(starting_directory_pointer);
+                        /*
+                          parse file returned to get usefull metadata
+                        */
+                        std::cout << " Does this get hit? " << std::endl;
+
+                    }
             }
         }
     }
 }
 
-/*             commenting out the main sybol innce i ahev one in another fiel for testing
+
 
     int main() {
         // std::filesystem::directory_entry starting("/Users/arielwhittingham/Downloads/demo/"); //test di
         // // std::filesystem::directory_entry starting(std::getenv("HOME"));
         // std::cout << starting.path() << std::endl;
 
-        crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_test");
+        crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_parent");
 
         // std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
         //
@@ -281,6 +319,4 @@ namespace crawl {
         // std::cout << random_record->file_name << "\n";
     }
 
-
-    */
 

@@ -169,11 +169,15 @@ If all elements in the range are smaller than the given value, it returns the en
         std::cout <<  offset_len << std::endl;
         local_filestream.seekg(offset_len, std::ios::beg);
         local_filestream.read(reinterpret_cast<char*>(&storage_record), sizeof(Struc::StorageRecord));
-          std::cout <<  storage_record.to_string() << std::endl;
-        local_filestream.good();
+        std::cout <<  storage_record.to_string() << std::endl;
+
+        //check if file is not currupted?
+        // if (local_filestream.good())
+        //   {
+        //
+        //   }
+
         return storage_record;
-
-
       }
     };
 
