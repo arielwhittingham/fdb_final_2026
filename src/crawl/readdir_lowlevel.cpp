@@ -8,6 +8,7 @@
 #include <fcntl.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdexcept>
 #include <string.h>
 #include <vector>
 #include <climits>
@@ -72,26 +73,27 @@ namespace crawl
   int buffer_reads_count{0};
   // void crawl_filesystem(const std::string&  starting_path) {
 
-  void append_to_create_new_file_path(const char *new_folder_name, const char *starting)
+   void append_to_create_new_file_path(const char *new_folder_name, const char *starting, char *op , size_t op_size = PATH_MAX)
     {
-      char path_max[PATH_MAX];
 
-      int check = snprintf(path_max, sizeof(path_max), "%s/%s", new_folder_name, starting);
+
+      int check = snprintf(op, op_size, "%s/%s", starting, new_folder_name);
       //invlaid or too long
-      if (check < 0 || static_cast<std::size_t>(check) >= sizeof(path_max))
+      if (check < 0 || static_cast<std::size_t>(check) >= PATH_MAX)
         {
           std::cout << "ERROR: path_max is too big" << std::endl;
           std::cerr << "ERROR: path_max is too big" << std::endl;
-          return;
+          throw std::runtime_error("path_max is too big");
         }
-      std::cout << " nf " <<  new_folder_name << std::endl;
+      std::cout << " new folder name: " <<  op << std::endl;
+       // return op;
 
     }
 
 
   void crawl_filesystem(const char *starting_path)
     {
-      std::vector<std::string> directory_vec;
+      std::vector<const char*> directory_vec;
       directory_vec.emplace_back(starting_path);
       while (directory_vec.size() > 0)
         {
@@ -184,8 +186,6 @@ namespace crawl
                       cursor += sizeof(name_ref);
                       name_pointer = ref_location + name_ref.attr_dataoffset;
 
-
-                      // remove null at the end o the file name
                       if (name_ref.attr_length > 0)
                         {
                           name_pointer[name_ref.attr_length - 1] = '\0';
@@ -193,8 +193,6 @@ namespace crawl
                       filename = std::string_view(name_pointer, name_ref.attr_length - 1);
                       filename_length = name_ref.attr_length - 1;
                     }
-                  // std::cout <<  name_pointer << std::endl;
-
 
                   fsobj_type_t object_type = 0;
 
@@ -277,7 +275,7 @@ namespace crawl
                   // std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
                   // std::cout << "num atts: " << numatts << "\n";
                   // std::cout << "  file size: " << sizeof(filename) << std::endl;
-                  // std::cout << "  file: " << filename << std::endl;
+                  std::cout << "  file: " << filename << std::endl;
                   // std::cout << "  file: " << file_id << std::endl;
                   // std::cout << "  size bytes " << total_size << std::endl;
                   // std::cout << " perms  " << permissions << std::endl;
@@ -294,23 +292,17 @@ namespace crawl
                   // ----------------- Shift pointer tonext entry block -----------------
 
                   bufferstart += data_length;
-                  std::cout << " we good? 1 "  << std::endl;
 
                   /*Thi is a directory */
                   if (object_type == 2)
                     {
+                      char new_path[4096];
 
-                      std::cout << " HEELO1 "  << std::endl;
-                      char* new_path;
-                      std::cout << " HEELO2 "  << std::endl;
-                      std::cout << "NP: "<< new_path  << std::endl;
-                      std::cout << " HEELO3 "  << std::endl;
-                      append_to_create_new_file_path(new_path,starting_path);
+                      append_to_create_new_file_path(name_pointer,starting_path, new_path);
                       directory_vec.emplace_back(new_path);
                       std::cout << new_path  << std::endl;
 
                     }
-                  std::cout << " we good? 2 "  << std::endl;
 
                   /*
                    recursively crawl and write structs - OLD
@@ -324,9 +316,11 @@ namespace crawl
                   /*
                     parse file returned to get usefull metadata
                   */
-                  std::cout << " Does this get hit? " << std::endl;
                 }
             }
+          std::cout << "jump to new folder here" << std::endl;
+          starting_path = directory_vec.back();
+          directory_vec.pop_back();
         }
       close(0);
     }
@@ -338,6 +332,15 @@ int main()
     // std::filesystem::directory_entry starting("/Users/arielwhittingham/Downloads/demo/"); //test di
     // // std::filesystem::directory_entry starting(std::getenv("HOME"));
     // std::cout << starting.path() << std::endl;
+
+    const char* str = "donwloads";
+    const char* starting_path = "users/ariel";
+    char new_path[4096];
+
+
+    crawl::append_to_create_new_file_path(str, starting_path, new_path);
+    std::cout <<  new_path << std::endl;
+
 
     crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_parent");
 
