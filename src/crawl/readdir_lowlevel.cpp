@@ -10,6 +10,9 @@
 #include <stddef.h>
 #include <string.h>
 #include <vector>
+#include <climits>
+#include <cstdio>
+#include <cstring>
 #include "../schema/schema_objects.h"
 
 namespace crawl
@@ -65,8 +68,26 @@ namespace crawl
       return;
     }
 
+
   int buffer_reads_count{0};
   // void crawl_filesystem(const std::string&  starting_path) {
+
+  void append_to_create_new_file_path(const char *new_folder_name, const char *starting)
+    {
+      char path_max[PATH_MAX];
+
+      int check = snprintf(path_max, sizeof(path_max), "%s/%s", new_folder_name, starting);
+      //invlaid or too long
+      if (check < 0 || static_cast<std::size_t>(check) >= sizeof(path_max))
+        {
+          std::cout << "ERROR: path_max is too big" << std::endl;
+          std::cerr << "ERROR: path_max is too big" << std::endl;
+          return;
+        }
+      std::cout << " nf " <<  new_folder_name << std::endl;
+
+    }
+
 
   void crawl_filesystem(const char *starting_path)
     {
@@ -109,8 +130,6 @@ namespace crawl
           // int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
 
 
-          std::cout << *starting_path << std::endl;
-
           if (open_status == -1)
             {
               std::cout << "cant open: " << *starting_path << std::endl;
@@ -136,150 +155,177 @@ namespace crawl
               // loop through each returned bulkattrlist item
               for (ct = 0; ct < numatts; ct++)
                 {
-              // entry length
-              char *cursor = bufferstart;
-              std::memcpy(&data_length, cursor, sizeof(data_length));
-              cursor += sizeof(data_length);
+                  std::cout << "\n  ct: " << ct << std::endl;
 
-              // returned attributes
-              attribute_set_t returned_attrs{};
-              std::memcpy(&returned_attrs, cursor, sizeof(returned_attrs));
-              cursor += sizeof(returned_attrs);
+                  // entry length
+                  char *cursor = bufferstart;
+                  // std::cout << " NUMATTS: " << numatts << std::endl;
 
-              // ATTR_CMN_NAME -- this is the file name and its variable
+                  std::memcpy(&data_length, cursor, sizeof(data_length));
+                  cursor += sizeof(data_length);
 
-              std::string filename;
+                  // returned attributes
+                  attribute_set_t returned_attrs{};
+                  std::memcpy(&returned_attrs, cursor, sizeof(returned_attrs));
+                  cursor += sizeof(returned_attrs);
 
-              if (returned_attrs.commonattr & ATTR_CMN_NAME)
-                {
-                  char *ref_location = cursor;
-                  attrreference_t name_ref{};
-                  std::memcpy(&name_ref, cursor, sizeof(name_ref));
+                  // ATTR_CMN_NAME -- this is the file name and its variable
 
-                  cursor += sizeof(name_ref);
-                  char *name_pointer = ref_location + name_ref.attr_dataoffset;
-                  filename.assign(name_pointer, name_ref.attr_length);
 
-                  // remove null at the end o the file name
-                  if (!filename.empty() && filename.back() == '\0')
+                  std::string_view filename;
+                  char *name_pointer = nullptr;
+                  std::size_t filename_length{};
+                  if (returned_attrs.commonattr & ATTR_CMN_NAME)
                     {
-                      filename.pop_back();
+                      char *ref_location = cursor;
+                      attrreference_t name_ref{};
+                      std::memcpy(&name_ref, cursor, sizeof(name_ref));
+
+                      cursor += sizeof(name_ref);
+                      name_pointer = ref_location + name_ref.attr_dataoffset;
+
+
+                      // remove null at the end o the file name
+                      if (name_ref.attr_length > 0)
+                        {
+                          name_pointer[name_ref.attr_length - 1] = '\0';
+                        }
+                      filename = std::string_view(name_pointer, name_ref.attr_length - 1);
+                      filename_length = name_ref.attr_length - 1;
                     }
+                  // std::cout <<  name_pointer << std::endl;
+
+
+                  fsobj_type_t object_type = 0;
+
+                  if (returned_attrs.commonattr & ATTR_CMN_OBJTYPE)
+                    {
+                      std::memcpy(&object_type, cursor, sizeof(object_type));
+                      cursor += sizeof(object_type);
+                    }
+
+
+                  timespec crtime{}; //this is a sttruct not a single value
+
+                  if (returned_attrs.commonattr & ATTR_CMN_CRTIME)
+                    {
+                      std::memcpy(
+                        &crtime, cursor, sizeof(crtime)
+                      );
+
+                      cursor += sizeof(crtime);
+                    }
+
+
+                  uint32_t permissions = 0;
+                  if (returned_attrs.commonattr & ATTR_CMN_ACCESSMASK)
+                    {
+                      std::memcpy(&permissions, cursor, sizeof(permissions));
+                      cursor += sizeof(permissions);
+                    }
+
+                  // remove document_id foor now
+                  // uint32_t document_id = 0;
+                  //
+                  // if (returned_attrs.commonattr & ATTR_CMN_DOCUMENT_ID) {
+                  //     std::memcpy(&document_id,cur,sizeof(document_id)
+                  //     );
+                  //
+                  //     cur += sizeof(document_id);
+                  // }
+
+
+                  // this is the inode
+                  // ATTR_CMN_FILEID
+
+                  uint64_t file_id = 0;
+                  if (returned_attrs.commonattr & ATTR_CMN_FILEID)
+                    {
+                      std::memcpy(
+                        &file_id,
+                        cursor,
+                        sizeof(file_id)
+                      );
+
+                      cursor += sizeof(file_id);
+                    }
+
+                  uint64_t parent_id = 0;
+
+                  if (returned_attrs.commonattr & ATTR_CMN_PARENTID)
+                    {
+                      std::memcpy(
+                        &parent_id, cursor, sizeof(parent_id)
+                      );
+                      cursor += sizeof(parent_id);
+                    }
+
+
+                  off_t total_size = 0;
+
+                  if (returned_attrs.fileattr & ATTR_FILE_TOTALSIZE)
+                    {
+                      std::memcpy(
+                        &total_size,
+                        cursor,
+                        sizeof(total_size)
+                      );
+
+                      cursor += sizeof(total_size);
+                    }
+
+                  // std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
+                  // std::cout << "num atts: " << numatts << "\n";
+                  // std::cout << "  file size: " << sizeof(filename) << std::endl;
+                  // std::cout << "  file: " << filename << std::endl;
+                  // std::cout << "  file: " << file_id << std::endl;
+                  // std::cout << "  size bytes " << total_size << std::endl;
+                  // std::cout << " perms  " << permissions << std::endl;
+                  // // std::cout << " doc_id  " <<document_id << std::endl;
+                  //
+                  // std::cout << " parent_inode  " << parent_id << std::endl;
+                  // std::cout << "  seconds " << crtime.tv_sec << std::endl;
+                  std::cout << "  objtype " << object_type << std::endl;
+                  // std::cout << "  path " << starting_path << std::endl;
+
+
+                  // -----DEBUG END-------
+                  // ---------------------
+                  // ----------------- Shift pointer tonext entry block -----------------
+
+                  bufferstart += data_length;
+                  std::cout << " we good? 1 "  << std::endl;
+
+                  /*Thi is a directory */
+                  if (object_type == 2)
+                    {
+
+                      std::cout << " HEELO1 "  << std::endl;
+                      char* new_path;
+                      std::cout << " HEELO2 "  << std::endl;
+                      std::cout << "NP: "<< new_path  << std::endl;
+                      std::cout << " HEELO3 "  << std::endl;
+                      append_to_create_new_file_path(new_path,starting_path);
+                      directory_vec.emplace_back(new_path);
+                      std::cout << new_path  << std::endl;
+
+                    }
+                  std::cout << " we good? 2 "  << std::endl;
+
+                  /*
+                   recursively crawl and write structs - OLD
+                   */
+
+                  // DIR* starting_directory_pointer = opendir(starting_path);
+                  // struct dirent* directory_list;
+
+                  // while (readdir(starting_directory_pointer) != nullptr) {
+                  //     auto lst  = readdir(starting_directory_pointer);
+                  /*
+                    parse file returned to get usefull metadata
+                  */
+                  std::cout << " Does this get hit? " << std::endl;
                 }
-
-
-              fsobj_type_t object_type = 0;
-
-              if (returned_attrs.commonattr & ATTR_CMN_OBJTYPE)
-                {
-                  std::memcpy(&object_type, cursor, sizeof(object_type));
-                  cursor += sizeof(object_type);
-                }
-
-
-              timespec crtime{}; //this is a sttruct not a single value
-
-              if (returned_attrs.commonattr & ATTR_CMN_CRTIME)
-                {
-                  std::memcpy(
-                    &crtime, cursor, sizeof(crtime)
-                  );
-
-                  cursor += sizeof(crtime);
-                }
-
-
-              uint32_t permissions = 0;
-              if (returned_attrs.commonattr & ATTR_CMN_ACCESSMASK)
-                {
-                  std::memcpy(&permissions, cursor, sizeof(permissions));
-                  cursor += sizeof(permissions);
-                }
-
-              // remove document_id foor now
-              // uint32_t document_id = 0;
-              //
-              // if (returned_attrs.commonattr & ATTR_CMN_DOCUMENT_ID) {
-              //     std::memcpy(&document_id,cur,sizeof(document_id)
-              //     );
-              //
-              //     cur += sizeof(document_id);
-              // }
-
-
-              // this is the inode
-              // ATTR_CMN_FILEID
-
-              uint64_t file_id = 0;
-              if (returned_attrs.commonattr & ATTR_CMN_FILEID)
-                {
-                  std::memcpy(
-                    &file_id,
-                    cursor,
-                    sizeof(file_id)
-                  );
-
-                  cursor += sizeof(file_id);
-                }
-
-              uint64_t parent_id = 0;
-
-              if (returned_attrs.commonattr & ATTR_CMN_PARENTID)
-                {
-                  std::memcpy(
-                    &parent_id, cursor, sizeof(parent_id)
-                  );
-                  cursor += sizeof(parent_id);
-                }
-
-
-              off_t total_size = 0;
-
-              if (returned_attrs.fileattr & ATTR_FILE_TOTALSIZE)
-                {
-                  std::memcpy(
-                    &total_size,
-                    cursor,
-                    sizeof(total_size)
-                  );
-
-                  cursor += sizeof(total_size);
-                }
-
-              // std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
-              // std::cout << "num atts: " << numatts << "\n";
-              // std::cout << "  file size: " << sizeof(filename) << std::endl;
-              std::cout << "  file: " << filename << std::endl;
-              // std::cout << "  file: " << file_id << std::endl;
-              // std::cout << "  size bytes " << total_size << std::endl;
-              // std::cout << " perms  " << permissions << std::endl;
-              // // std::cout << " doc_id  " <<document_id << std::endl;
-              //
-              // std::cout << " parent_inode  " << parent_id << std::endl;
-              // std::cout << "  seconds " << crtime.tv_sec << std::endl;
-              // std::cout << "  objtype " << object_type << std::endl;
-
-
-              // -----DEBUG END-------
-              // ---------------------
-              // ----------------- Shift pointer tonext entry block -----------------
-
-              bufferstart += data_length;
-
-              /*
-               recursively crawl and write structs - OLD
-               */
-
-              // DIR* starting_directory_pointer = opendir(starting_path);
-              // struct dirent* directory_list;
-
-              // while (readdir(starting_directory_pointer) != nullptr) {
-              //     auto lst  = readdir(starting_directory_pointer);
-              /*
-                parse file returned to get usefull metadata
-              */
-              std::cout << " Does this get hit? " << std::endl;
-            }
             }
         }
       close(0);
