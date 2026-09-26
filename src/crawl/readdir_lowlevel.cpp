@@ -89,20 +89,43 @@ namespace crawl
         }
       std::cout << " new folder name: " <<  op << std::endl;
        // return op;
-
     }
 
 
   void crawl_filesystem(const char *starting_path)
     {
-      std::vector<const char*> directory_vec;
-      directory_vec.emplace_back(starting_path);
-      while (directory_vec.size() > 0)
+
+       struct file_crawl_object
+         {
+         int descriptor;
+         char new_path[4096];
+
+         };
+
+      std::vector<file_crawl_object> directory_vec;
+       int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
+
+       // int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
+
+       file_crawl_object crawl_obj{};
+
+
+       // make sure starting path can open properly before adding it to crawl
+       if (!(open_status == -1))
+         {
+           crawl_obj.descriptor = open_status;
+           strncpy(crawl_obj.new_path, starting_path, sizeof(crawl_obj.new_path) -1 );
+           crawl_obj.new_path[sizeof(crawl_obj.new_path) -1] = '\0';
+           directory_vec.push_back(crawl_obj);
+         }
+
+      while (!directory_vec.empty())
         {
           attrlist attributes;
           //buffer
           char readinto[1024 * 64];
           memset(&attributes, 0, sizeof(attributes));
+          file_crawl_object file_current = directory_vec.back();
           directory_vec.pop_back();
 
           // https://github.com/apple-oss-distributions/xnu/blob/main/bsd/man/man2/getattrlist.2
@@ -126,29 +149,17 @@ namespace crawl
 
           attributes.fileattr =
               ATTR_FILE_TOTALSIZE;
-          // make sure starting path can open properly with the correct features
 
-
-          int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
-
-          // int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
-
-
-          if (open_status == -1)
-            {
-              std::cout << "cant open: " << *starting_path << std::endl;
-              return;
-            }
+          // if (open_status == -1)
+          //   {
+          //     std::cout << "cant open: " << *starting_path << std::endl;
+          //     return;
+          //   }
 
           uint64_t options = 0;
           int numatts;
-          // need to mov this inside a later while-loop
           while ((numatts = getattrlistbulk(
-                    open_status,
-                    &attributes,
-                    &readinto[0],
-                    sizeof(readinto),
-                    options)) > 0)
+                    file_current.descriptor, &attributes, &readinto[0], sizeof(readinto),options)) > 0)
             {
               auto bufferstart = &readinto[0];
               char *value;
@@ -156,7 +167,7 @@ namespace crawl
               size_t ct;
 
 
-              // loop through each returned bulkattrlist item
+              // loop through each returned getattrlistbulk item
               for (ct = 0; ct < numatts; ct++)
                 {
                   crawl::global_file_counter++;
@@ -174,7 +185,6 @@ namespace crawl
                   cursor += sizeof(returned_attrs);
 
                   // ATTR_CMN_NAME -- this is the file name and its variable
-
 
                   std::string_view filename;
                   char *name_pointer = nullptr;
@@ -207,7 +217,7 @@ namespace crawl
                     }
 
 
-                  timespec crtime{}; //this is a sttruct not a single value
+                  timespec crtime{}; //this is a struct not a single value
 
                   if (returned_attrs.commonattr & ATTR_CMN_CRTIME)
                     {
@@ -218,7 +228,6 @@ namespace crawl
                       cursor += sizeof(crtime);
                     }
 
-
                   uint32_t permissions = 0;
                   if (returned_attrs.commonattr & ATTR_CMN_ACCESSMASK)
                     {
@@ -226,18 +235,6 @@ namespace crawl
                       cursor += sizeof(permissions);
                     }
 
-                  // remove document_id foor now
-                  // uint32_t document_id = 0;
-                  //
-                  // if (returned_attrs.commonattr & ATTR_CMN_DOCUMENT_ID) {
-                  //     std::memcpy(&document_id,cur,sizeof(document_id)
-                  //     );
-                  //
-                  //     cur += sizeof(document_id);
-                  // }
-
-
-                  // this is the inode
                   // ATTR_CMN_FILEID
 
                   uint64_t file_id = 0;
@@ -276,38 +273,31 @@ namespace crawl
                       cursor += sizeof(total_size);
                     }
 
-                  // std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
-                  // std::cout << "num atts: " << numatts << "\n";
-                  // std::cout << "  file size: " << sizeof(filename) << std::endl;
+
                   std::cout << "\n  fcount: " << global_file_counter << std::endl;
-                  std::cout << " parent: " << starting_path << "  file: " << filename << std::endl;
-                  // std::cout << "  file: " << file_id << std::endl;
-                  // std::cout << "  size bytes " << total_size << std::endl;
-                  // std::cout << " perms  " << permissions << std::endl;
-                  // // std::cout << " doc_id  " <<document_id << std::endl;
-                  //
-                  // std::cout << " parent_inode  " << parent_id << std::endl;
-                  // std::cout << "  seconds " << crtime.tv_sec << std::endl;
-                  // std::cout << "  objtype " << object_type << std::endl;
-                  // std::cout << "  path " << starting_path << std::endl;
+                  std::cout << " parent: " << file_current.new_path << "  file: " << filename << std::endl;
 
-
-                  // -----DEBUG END-------
-                  // ---------------------
-                  // ----------------- Shift pointer tonext entry block -----------------
-
-                  bufferstart += data_length;
-
-                  /*Thi is a directory */
-                  if (object_type == 2)
+                  /*This is a new directory to add to directory vector */
+                  if (object_type == VDIR)
                     {
-                      char new_path[4096];
+                      int fd = openat(file_current.descriptor, name_pointer, O_CLOEXEC | O_RDONLY | O_DIRECTORY);
+                      if (fd != -1)
+                        {
+                          file_crawl_object new_obj{};
+                          new_obj.descriptor = fd;
 
-                      append_to_create_new_file_path(name_pointer,starting_path, new_path);
-                      directory_vec.emplace_back(new_path);
-                      // std::cout << new_path  << std::endl;
-
+                          // std::cout << new_path  << std::endl;
+                          append_to_create_new_file_path(name_pointer,file_current.new_path, new_obj.new_path);
+                          directory_vec.push_back(new_obj);
+                        }
                     }
+                    /* create file row here:
+
+
+                    */
+
+                  // ----------------- Shift pointer tonext entry block -----------------
+                  bufferstart += data_length;
 
                   /*
                    recursively crawl and write structs - OLD
@@ -318,16 +308,12 @@ namespace crawl
 
                   // while (readdir(starting_directory_pointer) != nullptr) {
                   //     auto lst  = readdir(starting_directory_pointer);
-                  /*
-                    parse file returned to get usefull metadata
-                  */
                 }
             }
+          close(file_current.descriptor);
           std::cout << "jump to new folder here" << std::endl;
-          starting_path = directory_vec.back();
-          directory_vec.pop_back();
         }
-      close(0);
+
     }
   }
 
@@ -347,19 +333,10 @@ int main()
     std::cout <<  new_path << std::endl;
 
 
-    crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_parent");
+    crawl::crawl_filesystem("/Users/arielwhittingham/Documents/CodingNomads");
     std::cout << " file count " << crawl::global_file_counter  << std::endl;
-    // for (auto &f : crawl::global_file_list)
-    //   {
-    //     std::cout << f <<   std::endl;
-    //
-    //   }
-
-
 
     // std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
-    //
-    // std::cout << starting.exists() << "\n";
 
     schema::FileRecord *random_record;
     // random_record->file_name = "Ariel";
