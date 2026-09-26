@@ -19,6 +19,8 @@
 namespace crawl
   {
   using namespace schema;
+  uint32_t global_file_counter{0};
+  std::vector<char*>  global_file_list{};
 
 
   struct raw_bytes_returned
@@ -157,7 +159,7 @@ namespace crawl
               // loop through each returned bulkattrlist item
               for (ct = 0; ct < numatts; ct++)
                 {
-                  std::cout << "\n  ct: " << ct << std::endl;
+                  crawl::global_file_counter++;
 
                   // entry length
                   char *cursor = bufferstart;
@@ -192,7 +194,9 @@ namespace crawl
                         }
                       filename = std::string_view(name_pointer, name_ref.attr_length - 1);
                       filename_length = name_ref.attr_length - 1;
+
                     }
+                  crawl::global_file_list.push_back(name_pointer);
 
                   fsobj_type_t object_type = 0;
 
@@ -275,7 +279,8 @@ namespace crawl
                   // std::cout << "\n size of returned_atts variable: " << sizeof(returned_attrs) << "\n";
                   // std::cout << "num atts: " << numatts << "\n";
                   // std::cout << "  file size: " << sizeof(filename) << std::endl;
-                  std::cout << "  file: " << filename << std::endl;
+                  std::cout << "\n  fcount: " << global_file_counter << std::endl;
+                  std::cout << " parent: " << starting_path << "  file: " << filename << std::endl;
                   // std::cout << "  file: " << file_id << std::endl;
                   // std::cout << "  size bytes " << total_size << std::endl;
                   // std::cout << " perms  " << permissions << std::endl;
@@ -283,7 +288,7 @@ namespace crawl
                   //
                   // std::cout << " parent_inode  " << parent_id << std::endl;
                   // std::cout << "  seconds " << crtime.tv_sec << std::endl;
-                  std::cout << "  objtype " << object_type << std::endl;
+                  // std::cout << "  objtype " << object_type << std::endl;
                   // std::cout << "  path " << starting_path << std::endl;
 
 
@@ -300,7 +305,7 @@ namespace crawl
 
                       append_to_create_new_file_path(name_pointer,starting_path, new_path);
                       directory_vec.emplace_back(new_path);
-                      std::cout << new_path  << std::endl;
+                      // std::cout << new_path  << std::endl;
 
                     }
 
@@ -343,6 +348,14 @@ int main()
 
 
     crawl::crawl_filesystem("/Users/arielwhittingham/Documents/fdb_parent");
+    std::cout << " file count " << crawl::global_file_counter  << std::endl;
+    // for (auto &f : crawl::global_file_list)
+    //   {
+    //     std::cout << f <<   std::endl;
+    //
+    //   }
+
+
 
     // std::cout << "Home: " <<  std::getenv("HOME") << std::endl;
     //
