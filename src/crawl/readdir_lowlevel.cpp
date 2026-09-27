@@ -318,6 +318,11 @@ namespace crawl
   }
 
 
+/* HIDING THIS MAIN FOR RUNNING WHOLE PROJECT
+
+
+
+
 int main()
   {
     // std::filesystem::directory_entry starting("/Users/arielwhittingham/Downloads/demo/"); //test di
@@ -343,3 +348,4 @@ int main()
     //
     // std::cout << random_record->file_name << "\n";
   }
+*/

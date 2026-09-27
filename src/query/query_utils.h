@@ -205,33 +205,35 @@ namespace query
     }
   }
 
-//
-// int main()
-//   {
-//     // std::string s = "field > 45457665";
-//     // std::string equality{"="};
-//     // std::cout << query::substring_count(equality,s) << std::endl;
-//     //
-//     // auto x = query::primary_where_clause_parser(s);
-//     //
-//     // for (auto& val : x)
-//     //   {
-//     //     std::cout << val << std::endl;
-//     //   }
-//
-//
-//     std::string start {" where field > 45457665"};
-//
-//
-//     std::cout << "\nlen star: "<< start.size()  << " clause: " << start << std::endl;
-//
-//     auto input = query::get_where_clause(start);
-//
-//     std::cout << "\nlen input: "<< input.size()  << " clause: " << input << std::endl;
-//
-//     auto trimmed = query::trim_leading_trailing(input);
-//
-//     std::cout << "\nlen trimmed: "<< trimmed.size()  << " clause: " << trimmed << std::endl;
-//
-//     return 1;
-//   }
+
+/* HIDING THIS MAIN FOR RUNNING WHOLE PROJECT
+int main()
+   {
+     // std::string s = "field > 45457665";
+     // std::string equality{"="};
+     // std::cout << query::substring_count(equality,s) << std::endl;
+     //
+     // auto x = query::primary_where_clause_parser(s);
+     //
+     // for (auto& val : x)
+     //   {
+     //     std::cout << val << std::endl;
+     //   }
+
+
+     std::string start {" where field > 45457665"};
+
+
+     std::cout << "\nlen star: "<< start.size()  << " clause: " << start << std::endl;
+
+     auto input = query::get_where_clause(start);
+
+     std::cout << "\nlen input: "<< input.size()  << " clause: " << input << std::endl;
+
+     auto trimmed = query::trim_leading_trailing(input);
+
+     std::cout << "\nlen trimmed: "<< trimmed.size()  << " clause: " << trimmed << std::endl;
+
+     return 1;
+   }
+*/

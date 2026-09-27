@@ -18,14 +18,9 @@ namespace Struc
     Internal = 1
     };
 
-  extern const int PAGE_SIZE_IN_BYTES = 4096;
-  // using page_id_type = std::uint32_t;
-  std::string DB_FILE_LOCATION = "../data/";
-  std::string DB_FILE_NAME = "../data/databasefile.db";
-  std::string TEST_STARTING_DIRECTORY = "/Users/arielwhittingham/prod_workspace/";
-  // std::string DB_FILE_NAME = "databasefile.db"
+  constexpr int PAGE_SIZE_IN_BYTES = 4096;
   // this is a sentinel commonly used to represent and invalid ID
-  uint32_t invalid_page_id = UINT32_MAX;
+  constexpr uint32_t invalid_page_id = UINT32_MAX;
   using FileNameDataType = std::array<char, 255>;
 
 
