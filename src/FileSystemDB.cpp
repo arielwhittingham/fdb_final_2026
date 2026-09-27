@@ -40,6 +40,9 @@ void run_application()
 
     auto starting_dir = "/Users/arielwhittingham/Documents/fdb_parent";
     crawl::crawl_filesystem(starting_dir, sink);
+
+    auto recore = database_file.read_from_file_to_memory(27);
+    std::cout << recore.to_string() << "\n";
   }
 
 

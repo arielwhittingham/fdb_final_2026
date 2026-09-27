@@ -46,35 +46,13 @@ If all elements in the range are smaller than the given value, it returns the en
             {
               std::cerr << "filesystem error, can't make directory" << e.what() <<
                   std::endl;
-              return;
+              throw;
             }
-        // create database file if not exists
-        if (fs::exists(DB_FILE_NAME))
-          {
-            fs::remove(DB_FILE_NAME);
-            std::ofstream touch(DB_FILE_NAME, std::ios::binary);
+        filestream.open(DB_FILE_NAME,
+                 std::ios::binary | std::ios::in | std::ios::out | std::ios::trunc);
+
           }
 
-        else
-          {
-            std::ofstream touch(DB_FILE_NAME, std::ios::binary);
-
-            // open file
-            filestream.open(
-              DB_FILE_NAME,
-              std::ios::binary | std::ios::in | std::ios::out);
-            if (filestream.is_open())
-              {
-                std::cout << "open" << "\n";
-              }
-            else
-              {
-                std::cout << "CANT open" << "\n";
-              }
-
-            filestream.close();
-          }
-      }
 
 
     uint32_t BufferManager::create_new_record_id()
@@ -93,22 +71,19 @@ If all elements in the range are smaller than the given value, it returns the en
         .record_id = new_record_id,
         .row = full_record_no_record_id
         };
-        filestream.open(
-          DB_FILE_NAME,
-          std::ios::binary | std::ios::app | std::ios::out);
+        filestream.seekp(static_cast<std::streamoff>(new_record_id - 1)
+                 * sizeof(Struc::StorageRecord));
         filestream.write(
-          reinterpret_cast<const char *>(&full_record),
-          sizeof(full_record));
+          reinterpret_cast<const char *>(&full_record),sizeof(Struc::StorageRecord));
         std::cout << "\n wrote record #: " << full_record.to_string() << "\n";
         std::cout << "\n recordcount /  new record created: " << new_record_id <<
             "\n";
-        filestream.close();
         return new_record_id;
       }
 
     Struc::StorageRecord BufferManager::read_from_file_to_memory(uint32_t record_id)
       {
-
+        filestream.flush();
         Struc::StorageRecord storage_record{};
         uint32_t index_of_record_id= record_id -1;
         std::ifstream local_filestream(DB_FILE_NAME,std::ios::binary | std::ios::in);
