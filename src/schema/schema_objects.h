@@ -11,8 +11,8 @@ namespace schema {
         std::uint64_t parent_inode;
         std::uint64_t created_timestamp; // crtime
         std::uint64_t size_bytes; // off_t
-        std::uint16_t mode; // access_mask..?
-        std::array<char, 20> type; //make this into an enum
+        std::uint32_t mode; // access_mask..?
+        std::uint16_t type; //make this into an enum
         std::array<char, 255> file_name{}; // keeping last to align memory efficiently
 
 
@@ -23,7 +23,7 @@ namespace schema {
                     "\n created: " + std::to_string(created_timestamp) +
                     "\n size: " + std::to_string(size_bytes) +
                     "\n mode: " + std::to_string(mode) +
-                    "\n type: " + std::string(type.data()) +
+                    "\n type: " + std::to_string(type) +
                     "\n file name: " + std::string(file_name.data());
         }
     };

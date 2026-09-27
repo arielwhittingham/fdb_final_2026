@@ -1,3 +1,5 @@
+#pragma once
+
 #include <array>
 #include <vector>
 #include <iostream>
@@ -45,7 +47,7 @@ namespace query
       }
     };
 
-  std::vector<std::string> get_clause_tokens(std::string &input)
+  inline std::vector<std::string> get_clause_tokens(std::string &input)
     {
       std::vector<std::string> result;
       std::size_t new_start = 0;
@@ -73,7 +75,7 @@ namespace query
       return result;
     }
 
-  std::uint32_t substring_count(std::string &substring, std::string &instring)
+  inline std::uint32_t substring_count(std::string &substring, std::string &instring)
     {
       std::size_t position{0};
       std::uint32_t occurence_count{0};
@@ -97,7 +99,7 @@ namespace query
       return where_clause.substr(start_pos, where_clause.size());
     }
 
-  std::string get_where_clause(std::string query_text)
+inline std::string get_where_clause(std::string query_text)
     {
       std::string sep("where");
       auto where_pos = query_text.find(sep);
@@ -108,7 +110,7 @@ namespace query
       return trim_leading(query_text.substr(where_pos + sep.size()));
     }
 
-  std::vector<std::string> primary_where_clause_parser(std::string &where_clause)
+  inline std::vector<std::string> primary_where_clause_parser(std::string &where_clause)
     {
       // everything after the where clause
 

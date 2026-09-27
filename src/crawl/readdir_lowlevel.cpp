@@ -10,17 +10,20 @@
 #include <stddef.h>
 #include <stdexcept>
 #include <string.h>
+#include <string_view>
 #include <vector>
 #include <climits>
+#include <functional>
 #include <cstdio>
 #include <cstring>
 #include "../schema/schema_objects.h"
+#include "../index/structs_bplustree.h"
 
 namespace crawl
   {
   using namespace schema;
   uint32_t global_file_counter{0};
-  std::vector<char*>  global_file_list{};
+  std::vector<char *> global_file_list{};
 
 
   struct raw_bytes_returned
@@ -75,10 +78,9 @@ namespace crawl
   int buffer_reads_count{0};
   // void crawl_filesystem(const std::string&  starting_path) {
 
-   void append_to_create_new_file_path(const char *new_folder_name, const char *starting, char *op , size_t op_size = PATH_MAX)
+  void append_to_create_new_file_path(const char *new_folder_name, const char *starting, char *op,
+                                      size_t op_size = PATH_MAX)
     {
-
-
       int check = snprintf(op, op_size, "%s/%s", starting, new_folder_name);
       //invlaid or too long
       if (check < 0 || static_cast<std::size_t>(check) >= PATH_MAX)
@@ -87,37 +89,36 @@ namespace crawl
           std::cerr << "ERROR: path_max is too big" << std::endl;
           throw std::runtime_error("path_max is too big");
         }
-      std::cout << " new folder name: " <<  op << std::endl;
-       // return op;
+      std::cout << " new folder name: " << op << std::endl;
+      // return op;
     }
 
 
-  void crawl_filesystem(const char *starting_path)
+  void crawl_filesystem(const char *starting_path,
+                        const std::function<uint32_t(const FileRecord &)> &emit)
     {
-
-       struct file_crawl_object
-         {
-         int descriptor;
-         char new_path[4096];
-
-         };
+      struct file_crawl_object
+        {
+        int descriptor;
+        char new_path[4096];
+        };
 
       std::vector<file_crawl_object> directory_vec;
-       int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
+      int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
 
-       // int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
+      // int open_status = open(starting_path, O_CLOEXEC | O_RDONLY | O_DIRECTORY, 0);
 
-       file_crawl_object crawl_obj{};
+      file_crawl_object crawl_obj{};
 
 
-       // make sure starting path can open properly before adding it to crawl
-       if (!(open_status == -1))
-         {
-           crawl_obj.descriptor = open_status;
-           strncpy(crawl_obj.new_path, starting_path, sizeof(crawl_obj.new_path) -1 );
-           crawl_obj.new_path[sizeof(crawl_obj.new_path) -1] = '\0';
-           directory_vec.push_back(crawl_obj);
-         }
+      // make sure starting path can open properly before adding it to crawl
+      if (!(open_status == -1))
+        {
+          crawl_obj.descriptor = open_status;
+          strncpy(crawl_obj.new_path, starting_path, sizeof(crawl_obj.new_path) - 1);
+          crawl_obj.new_path[sizeof(crawl_obj.new_path) - 1] = '\0';
+          directory_vec.push_back(crawl_obj);
+        }
 
       while (!directory_vec.empty())
         {
@@ -159,7 +160,8 @@ namespace crawl
           uint64_t options = 0;
           int numatts;
           while ((numatts = getattrlistbulk(
-                    file_current.descriptor, &attributes, &readinto[0], sizeof(readinto),options)) > 0)
+                    file_current.descriptor, &attributes, &readinto[0], sizeof(readinto),
+                    options)) > 0)
             {
               auto bufferstart = &readinto[0];
               char *value;
@@ -204,7 +206,6 @@ namespace crawl
                         }
                       filename = std::string_view(name_pointer, name_ref.attr_length - 1);
                       filename_length = name_ref.attr_length - 1;
-
                     }
                   crawl::global_file_list.push_back(name_pointer);
 
@@ -274,30 +275,55 @@ namespace crawl
                     }
 
 
-                  std::cout << "\n  fcount: " << global_file_counter << std::endl;
-                  std::cout << " parent: " << file_current.new_path << "  file: " << filename << std::endl;
+                  // std::cout << "\n  fcount: " << global_file_counter << std::endl;
+                  // std::cout << " parent: " << file_current.new_path << "  file: " << filename << std::endl;
 
                   /*This is a new directory to add to directory vector */
                   if (object_type == VDIR)
                     {
-                      int fd = openat(file_current.descriptor, name_pointer, O_CLOEXEC | O_RDONLY | O_DIRECTORY);
+                      int fd = openat(
+                        file_current.descriptor, name_pointer, O_CLOEXEC | O_RDONLY | O_DIRECTORY);
                       if (fd != -1)
                         {
                           file_crawl_object new_obj{};
                           new_obj.descriptor = fd;
 
                           // std::cout << new_path  << std::endl;
-                          append_to_create_new_file_path(name_pointer,file_current.new_path, new_obj.new_path);
+                          append_to_create_new_file_path(
+                            name_pointer, file_current.new_path, new_obj.new_path);
                           directory_vec.push_back(new_obj);
                         }
                     }
-                    /* create file row here:
+
+                  /* create file row here:
 
 
-                    */
+                  */
+
+                  //makerec
+
+                  FileRecord file_record{};
+                  std::copy_n(
+                    name_pointer,
+                    std::min(std::strlen(name_pointer), file_record.file_name.size() - 1),
+                    file_record.file_name.begin());
+
+                    file_record.type = object_type;
+                    file_record.created_timestamp =  crtime.tv_sec;
+                    file_record.mode = permissions;
+                    file_record.inode = file_id;
+                    file_record.parent_inode = parent_id;
+                    file_record.size_bytes = total_size;
+
+
+                  //fill file record
+                  std::cout << "--here:::: " << file_record.to_string() << std::endl;
+                  std::cout << "sizeof(FileRecord) = " << sizeof(FileRecord) << "\n";
+                  (void) emit(file_record);
 
                   // ----------------- Shift pointer tonext entry block -----------------
                   bufferstart += data_length;
+
 
                   /*
                    recursively crawl and write structs - OLD
@@ -313,7 +339,6 @@ namespace crawl
           close(file_current.descriptor);
           std::cout << "jump to new folder here" << std::endl;
         }
-
     }
   }
 

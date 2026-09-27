@@ -1,4 +1,5 @@
 #pragma once
+
 #include <cstddef>
 #include <iostream>
 #include <string_view>
@@ -9,7 +10,7 @@ namespace utils
   {
   using CharString =  std::array<char,255>;
 
-  CharString convert_string_view_to_char_array(std::string_view input_string)
+  inline CharString convert_string_view_to_char_array(std::string_view input_string)
     {
       CharString target_char_array{};
       static constexpr std::size_t total_array_size = 255;
@@ -24,7 +25,7 @@ namespace utils
   //     std::tuple<CharString> output;
   //
   //   }
-  std::tuple<CharString, CharString> range_from_text_search_exact_match(std::string_view input_string)
+  inline std::tuple<CharString, CharString> range_from_text_search_exact_match(std::string_view input_string)
     {
       CharString conv = convert_string_view_to_char_array(input_string);
       CharString conv_end =convert_string_view_to_char_array(input_string);
@@ -33,7 +34,7 @@ namespace utils
 
     }
 
-  std::tuple<CharString, CharString> range_from_text_search_prefix(std::string_view input_string)
+  inline std::tuple<CharString, CharString> range_from_text_search_prefix(std::string_view input_string)
     {
       CharString conv =convert_string_view_to_char_array(input_string);
       CharString conv_end =convert_string_view_to_char_array(input_string);

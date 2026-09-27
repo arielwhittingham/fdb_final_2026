@@ -1,4 +1,4 @@
-// #include "include/fdb_final_2026/bplustree.h"
+#include "filemanager.h"
 #include <iostream>
 #include <array>
 #include <vector>
@@ -14,31 +14,6 @@
 namespace FileManager
   {
   namespace fs = std::filesystem;
-  std::string DB_FILE_LOCATION = "../data/";
-  std::string DB_FILE_NAME = "../data/databasefile.db";
-
-  /*
-
-  */
-
-
-  //-----------------HELPER Non-Member Methods ----------------
-
-
-  template<std::size_t N>
-  bool element_exists(uint32_t search_value, std::array<uint32_t, N> &search_array)
-    {
-      uint32_t return_index = 0;
-      for (const auto &item: search_array)
-        {
-          if (item == search_value)
-            {
-              return true;
-            }
-          return_index++;
-        }
-      return false;
-    }
 
 
   /*
@@ -57,15 +32,7 @@ If all elements in the range are smaller than the given value, it returns the en
   //------------------------Record Management------------------------------------------------
 
 
-  class BufferManager
-    {
-  public:
-    fs::path dir = DB_FILE_LOCATION;
-    std::fstream filestream;
-    uint32_t record_count = 0;
-    std::vector<uint32_t> records;
-
-    BufferManager()
+    BufferManager::BufferManager()
       {
         //create dir if not exist
         try
@@ -87,7 +54,6 @@ If all elements in the range are smaller than the given value, it returns the en
             fs::remove(DB_FILE_NAME);
             std::ofstream touch(DB_FILE_NAME, std::ios::binary);
           }
-
 
         else
           {
@@ -111,14 +77,14 @@ If all elements in the range are smaller than the given value, it returns the en
       }
 
 
-    uint32_t create_new_record_id()
+    uint32_t BufferManager::create_new_record_id()
       {
         this->record_count++;
         return this->record_count;
       }
 
 
-    uint32_t write_full_record_to_file(const schema::FileRecord &full_record_no_record_id)
+    uint32_t BufferManager::write_full_record_to_file(const schema::FileRecord &full_record_no_record_id)
       {
         uint32_t new_record_id = this->create_new_record_id();
         this->records.push_back(new_record_id);
@@ -140,7 +106,7 @@ If all elements in the range are smaller than the given value, it returns the en
         return new_record_id;
       }
 
-    Struc::StorageRecord read_from_file_to_memory(uint32_t record_id)
+    Struc::StorageRecord BufferManager::read_from_file_to_memory(uint32_t record_id)
       {
 
         Struc::StorageRecord storage_record{};
@@ -161,5 +127,4 @@ If all elements in the range are smaller than the given value, it returns the en
 
         return storage_record;
       }
-    };
   }
