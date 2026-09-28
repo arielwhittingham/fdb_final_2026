@@ -47,7 +47,7 @@ namespace Index
   public:
     using Node = Struc::BPlusTreeNode<IndexDataType>;
     using Record = Struc::IndexRecord<IndexDataType>;
-    const std::string &starting_search_directory;
+    const std::string &bpustree_index_name;
     static constexpr uint32_t overflow_record_cushion = 2;
     uint32_t root_id{};
     std::vector<Node> tree_nodes;
@@ -57,11 +57,11 @@ namespace Index
 
     // --------constructor below---------
 
-    BPlusTreeManager(const std::string &starting_dir_param)
+    BPlusTreeManager(const std::string &index_label)
 
     // colon is the separator of variables before any constructor logic
     // initializes the root node and then assigns it to the vector of nodes
-      : starting_search_directory{starting_dir_param},
+      : bpustree_index_name{index_label},
         tree_nodes{}
       {
         Node root_node{};

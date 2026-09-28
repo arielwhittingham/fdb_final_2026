@@ -80,11 +80,22 @@ namespace Struc
 
     std::string to_string() const
       {
+        std::string field_text;
+
+        if constexpr (std::is_integral_v<IndexDataType>)
+          {
+            field_text = std::to_string(field_value);
+          }
+        else
+          {
+            field_text = std::string(field_value.data(),
+              strnlen(field_value.data(), field_value.size()));
+          }
         return
             " record_id: " +
             std::to_string(record_id) +
-            " valaue: " +
-            field_value.data();
+            " value: " +
+            field_text;
       }
     };
 
