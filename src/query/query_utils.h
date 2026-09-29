@@ -95,7 +95,7 @@ namespace query
       const std::string all_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
       size_t start_pos = where_clause.find_first_of(all_chars);
-      std::cout << start_pos << std::endl;
+      // std::cout << start_pos << std::endl;
       return where_clause.substr(start_pos, where_clause.size());
     }
 
@@ -130,7 +130,7 @@ inline std::string get_where_clause(std::string query_text)
             get_clause_tokens(where_clause).size() == 5))
         {
           std::string err =
-              "Where clause too short, too long, or has too many "
+              "ERROR: \nWhere clause too short, too long, or has too many "
               "conditions. Only one field "
               "condition is supported currently:\n"
               + where_clause;
@@ -148,14 +148,14 @@ inline std::string get_where_clause(std::string query_text)
       )
 
         {
-          std::string err = "Too many conditions in where clause:\n" + where_clause;
+          std::string err = "ERROR: Too many conditions in where clause:\n" + where_clause;
           throw std::runtime_error(err.c_str());
         }
       // special cases of invalid
       if (where_clause.find(between) != std::string::npos && where_clause.find(and_) ==
           std::string::npos)
         {
-          std::string err = "Incomplete between type where clause:\n" + where_clause;
+          std::string err = "ERROR: Incomplete between type where clause:\n" + where_clause;
           throw std::runtime_error(err.c_str());
         }
       if (where_clause.find(between) == std::string::npos && where_clause.find(and_) !=

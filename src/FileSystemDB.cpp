@@ -1,8 +1,11 @@
 #include <iostream>
 #include <cstring>
 #include <functional>
+#include <numbers>
+#include <stdexcept>
 #include "data/filemanager.h"
 #include "index/bplustree.h"
+#include "query/query_utils.h"
 
 
 namespace crawl
@@ -94,6 +97,42 @@ void run_application()
 
     auto recore = database_file.read_from_file_to_memory(650);
     std::cout << " \n\n READ BACK RECORD: " << recore.to_string() << "\n";
+
+    std::cout << " \n\n Crawl and B+Tree Generation Complete. " << std::endl;
+
+
+    bool continue_querying = true;
+    while (continue_querying)
+      {
+        while (true)
+          {
+            // std::string query_string;
+            std::string new_query_input{};
+
+            std::cout << "Input query string: ";
+            std::getline(std::cin, new_query_input);
+            std::string where_clause = query::get_where_clause(new_query_input);
+
+            try
+              {
+                query::primary_where_clause_parser(where_clause);
+              }
+            catch (std::runtime_error &e)
+              {
+                std::cerr << "\n Enter A Different Query: " << e.what() << std::endl;
+                continue;
+              }
+
+
+            break;
+          }
+
+        continue_querying = false;
+
+      }
+
+
+
   }
 
 
