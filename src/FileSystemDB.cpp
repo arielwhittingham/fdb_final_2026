@@ -6,6 +6,8 @@
 #include "data/filemanager.h"
 #include "index/bplustree.h"
 #include "query/query_utils.h"
+#include <readline/readline.h>
+#include <readline/history.h>
 
 
 namespace crawl
@@ -46,6 +48,15 @@ Struc::FileNameDataType normalize_name_key(const std::array<char, 255> &input_st
         op[i] = lowercase(input_string[i]);
       }
     return op;
+  }
+std::string& normalize_query(std::string  &input_string)
+  {
+
+
+    for (char &c : input_string) {
+        c = std::tolower(static_cast<unsigned char>(c));
+    }
+    return input_string;
   }
 
 void run_application()
@@ -110,12 +121,27 @@ void run_application()
             std::string new_query_input{};
 
             std::cout << "Input query string: ";
-            std::getline(std::cin, new_query_input);
-            std::string where_clause = query::get_where_clause(new_query_input);
+            char* buffer = readline("Query: ");
 
+            if (buffer) {
+                new_query_input = std::string(buffer);
+
+                // 2. Optional: Add to history so UP/DOWN arrows work too!
+                if (!new_query_input.empty()) {
+                    add_history(buffer);
+                }
+
+                // 3. Free the memory allocated by readline
+                free(buffer);
+            }
+            std::string where_clause = query::get_where_clause(new_query_input);
+            std::vector<std::string> parsed_tokens;
+/*
+             1. Check query is valid and return tokens for primary where clause.
+             */
             try
               {
-                query::primary_where_clause_parser(where_clause);
+                parsed_tokens = query::primary_where_clause_parser(where_clause);
               }
             catch (std::runtime_error &e)
               {
@@ -123,6 +149,31 @@ void run_application()
                 continue;
               }
 
+            char index_field = parsed_tokens[1][0];
+
+            normalize_query(new_query_input);
+
+            std::vector<uint32_t> output{};
+            switch (index_field)
+              {
+                case 'f' : //file_name
+                  std::cout <<  "" << std::endl;
+                  output = file_name_index.return_matching_record_ids(std::string_view(new_query_input));
+                  break;
+                case 's': //size_bytes
+                  output = size_index.return_matching_record_ids(std::string_view(new_query_input));
+                  std::cout << ""  << std::endl;
+                  break;
+                default:
+                  std::cout << " full scan " << std::endl;
+                  break;
+              }
+            std::cout << " print returned record ids out " << std::endl;
+            for (auto& x : output)
+              {
+                std::cout << x  << std::endl;
+
+              }
 
             break;
           }

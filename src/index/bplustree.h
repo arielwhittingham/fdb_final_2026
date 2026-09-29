@@ -698,7 +698,7 @@ a split output
           {
             auto &acquired_page = return_page_by_id(start_leaf);
             auto end_it = acquired_page.records.begin() + acquired_page.filled_slots;
-            auto check_iterator = lower_bound(
+            auto check_iterator = std::lower_bound(
               acquired_page.records.begin(), end_it,
               create_search_record_from_field_value(start_search_record),
               Record::less_than_comparator);
