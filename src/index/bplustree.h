@@ -11,7 +11,9 @@
 #include <cstdint>
 #include <algorithm>
 #include <fstream>
+#include <typeinfo>
 #include <variant>
+#include <type_traits>
 #include <filesystem>
 #include <unordered_map>
 #include <unordered_set>
@@ -571,10 +573,9 @@ a split output
 
          */
 
-
         if (tokens.size() == 6)
           { // between | int only
-            if constexpr (__is_same(IndexDataType, uint32_t))
+            if constexpr (std::is_integral_v<std::remove_cvref_t<IndexDataType>>)
               {
                 if (tokens[0] == "range")
                   {
@@ -603,7 +604,7 @@ a split output
         if (tokens.size() == 4)
           {
             // equality, prefix, inequality | int or str
-            if constexpr (__is_same(IndexDataType, uint32_t))
+            if constexpr (std::is_integral_v<std::remove_cvref_t<IndexDataType>>)
               { //get range for these search types when field is int
                 if (tokens[0] == "exact")
                   {
