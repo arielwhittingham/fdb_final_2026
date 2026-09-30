@@ -38,16 +38,20 @@ namespace utils
     {
       CharString conv =convert_string_view_to_char_array(input_string);
       CharString conv_end =convert_string_view_to_char_array(input_string);
+
       std::size_t filled{};
       for (std::size_t chr = 0; chr < conv.size(); ++chr)
         {
+
           if (conv.at(chr) == '\0')
             {
               filled = chr - 1;
               break;
             }
         }
-      conv_end[filled] += 1;
+      conv[filled] = '\0';
+      conv_end[filled] = '\0';
+      conv_end[filled - 1] += 1 ;
       return std::tuple<CharString, CharString>(conv, conv_end);
 
 
