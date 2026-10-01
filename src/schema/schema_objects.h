@@ -14,6 +14,7 @@ namespace schema {
         std::uint32_t mode; // access_mask..?
         std::uint16_t type; //make this into an enum
         std::array<char, 255> file_name{}; // keeping last to align memory efficiently
+        std::array<char, 1024> file_tree{}; // keeping last to align memory efficiently
 
 
         std::string to_string() const {
@@ -24,7 +25,8 @@ namespace schema {
                     "\n size: " + std::to_string(size_bytes) +
                     "\n mode: " + std::to_string(mode) +
                     "\n type: " + std::to_string(type) +
-                    "\n file name: " + std::string(file_name.data());
+                    "\n file name: " + std::string(file_name.data()) +
+                    "\n path name: " + std::string(file_tree.data());
         }
     };
 

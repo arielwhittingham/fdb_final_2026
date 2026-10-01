@@ -89,7 +89,7 @@ namespace crawl
           std::cerr << "ERROR: path_max is too big" << std::endl;
           throw std::runtime_error("path_max is too big");
         }
-      // std::cout << " new folder name: " << op << std::endl;
+      std::cout << " new folder name: " << op << std::endl;
       // return op;
     }
 
@@ -100,7 +100,7 @@ namespace crawl
       struct file_crawl_object
         {
         int descriptor;
-        char new_path[4096];
+        char new_path[PATH_MAX];
         };
 
       std::vector<file_crawl_object> directory_vec;
@@ -278,6 +278,8 @@ namespace crawl
                   // std::cout << "\n  fcount: " << global_file_counter << std::endl;
                   // std::cout << " parent: " << file_current.new_path << "  file: " << filename << std::endl;
 
+                  file_crawl_object new_obj{};
+
                   /*This is a new directory to add to directory vector */
                   if (object_type == VDIR)
                     {
@@ -285,28 +287,39 @@ namespace crawl
                         file_current.descriptor, name_pointer, O_CLOEXEC | O_RDONLY | O_DIRECTORY);
                       if (fd != -1)
                         {
-                          file_crawl_object new_obj{};
                           new_obj.descriptor = fd;
 
-                          // std::cout << new_path  << std::endl;
+                          // std::cout << file_current.new_path  << std::endl;
                           append_to_create_new_file_path(
                             name_pointer, file_current.new_path, new_obj.new_path);
                           directory_vec.push_back(new_obj);
                         }
                     }
 
+
+
+
                   /* create file row here:
 
 
                   */
 
+                  std::cout << "HEELOOOO:  "<<  file_current.new_path << std::endl;
+
                   //makerec
+
+                  std::cout << crawl::global_file_counter  << std::endl;
+
 
                   FileRecord file_record{};
                   std::copy_n(
                     name_pointer,
                     std::min(std::strlen(name_pointer), file_record.file_name.size() - 1),
                     file_record.file_name.begin());
+                  std::copy_n(
+                  file_current.new_path,
+                  std::min(std::strlen(file_current.new_path), file_record.file_tree.size() - 1),
+                  file_record.file_tree.begin());
 
                     file_record.type = object_type;
                     file_record.created_timestamp =  crtime.tv_sec;
@@ -314,6 +327,8 @@ namespace crawl
                     file_record.inode = file_id;
                     file_record.parent_inode = parent_id;
                     file_record.size_bytes = total_size;
+                    std::cout << file_record.to_string()  << std::endl;
+
 
 
                   //fill file record

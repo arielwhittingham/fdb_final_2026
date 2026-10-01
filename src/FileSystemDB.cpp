@@ -43,12 +43,13 @@ std::vector<std::string> return_tabular_file_records(std::vector<schema::FileRec
   {
     std::vector<std::string> rows{};
 
-    rows.push_back({"inode, file_name, parent_inode, created, size,mode, type "});
+    rows.push_back({"inode, file_tree, file_name, parent_inode, created, size,mode, type "});
     for (auto x : v)
 
       {
         std::string row_str{};
         row_str += std::to_string(x.inode) + ", ";
+        row_str += std::string(x.file_tree.data()) + ", ";
         row_str += std::string(x.file_name.data()) + ", ";
         row_str += std::to_string(x.parent_inode) + ", ";
         row_str += std::to_string(x.created_timestamp) + ", ";
@@ -124,7 +125,7 @@ void run_application()
       return recid;
       };
 
-    auto starting_dir = "/Users/arielwhittingham/Documents/fdb_parent";
+    auto starting_dir = "/Users/arielwhittingham/Documents";
     crawl::crawl_filesystem(starting_dir, sink);
 
     auto recore = database_file.read_from_file_to_memory(650);
