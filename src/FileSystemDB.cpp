@@ -39,6 +39,27 @@ constexpr char lowercase(char input_letter)
       }
   }
 
+std::vector<std::string> return_tabular_file_records(std::vector<schema::FileRecord> v)
+  {
+    std::vector<std::string> rows{};
+
+    rows.push_back({"inode, file_name, parent_inode, created, size,mode, type "});
+    for (auto x : v)
+
+      {
+        std::string row_str{};
+        row_str += std::to_string(x.inode) + ", ";
+        row_str += std::string(x.file_name.data()) + ", ";
+        row_str += std::to_string(x.parent_inode) + ", ";
+        row_str += std::to_string(x.created_timestamp) + ", ";
+        row_str += std::to_string(x.size_bytes) + ", ";
+        row_str += std::to_string(x.mode) + ", ";
+        row_str += std::to_string(x.type) + '\n';
+        rows.push_back(row_str);
+      }
+    return rows;
+  }
+
 Struc::FileNameDataType normalize_name_key(const std::array<char, 255> &input_string)
   {
     Struc::FileNameDataType op{};
@@ -103,7 +124,7 @@ void run_application()
       return recid;
       };
 
-    auto starting_dir = "/Users/arielwhittingham/Documents/CodingNomads";
+    auto starting_dir = "/Users/arielwhittingham/Documents/fdb_parent";
     crawl::crawl_filesystem(starting_dir, sink);
 
     auto recore = database_file.read_from_file_to_memory(650);
@@ -168,10 +189,20 @@ void run_application()
                   std::cout << " full scan " << std::endl;
                   break;
               }
-            std::cout << " print returned record ids out " << std::endl;
+
+
+            std::vector<schema::FileRecord> op{};
             for (auto& x : output)
               {
-                std::cout << x  << std::endl;
+
+                auto recore = database_file.read_from_file_to_memory(x);
+                op.push_back(recore.row);
+
+              }
+            std::vector<std::string> ret = return_tabular_file_records(op);
+            for (auto& r : ret)
+              {
+                std::cout << r  << std::endl;
 
               }
 

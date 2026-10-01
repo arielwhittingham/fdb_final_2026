@@ -75,9 +75,9 @@ If all elements in the range are smaller than the given value, it returns the en
                  * sizeof(Struc::StorageRecord));
         filestream.write(
           reinterpret_cast<const char *>(&full_record),sizeof(Struc::StorageRecord));
-        std::cout << "\n wrote record #: " << full_record.to_string() << "\n";
-        std::cout << "\n recordcount /  new record created: " << new_record_id <<
-            "\n";
+        // std::cout << "\n wrote record #: " << full_record.to_string() << "\n";
+        // std::cout << "\n recordcount /  new record created: " << new_record_id <<
+        //     "\n";
         return new_record_id;
       }
 
@@ -89,10 +89,8 @@ If all elements in the range are smaller than the given value, it returns the en
         std::ifstream local_filestream(DB_FILE_NAME,std::ios::binary | std::ios::in);
 
         std::streamoff offset_len  = static_cast<std::streamoff>(std::streamoff(index_of_record_id * sizeof(Struc::StorageRecord)));
-        std::cout <<  offset_len << std::endl;
         local_filestream.seekg(offset_len, std::ios::beg);
         local_filestream.read(reinterpret_cast<char*>(&storage_record), sizeof(Struc::StorageRecord));
-        std::cout <<  "\n \n read file to memory record output: " << storage_record.to_string() << std::endl;
 
         //check if file is not currupted?
         // if (local_filestream.good())

@@ -89,7 +89,7 @@ namespace crawl
           std::cerr << "ERROR: path_max is too big" << std::endl;
           throw std::runtime_error("path_max is too big");
         }
-      std::cout << " new folder name: " << op << std::endl;
+      // std::cout << " new folder name: " << op << std::endl;
       // return op;
     }
 
@@ -317,8 +317,8 @@ namespace crawl
 
 
                   //fill file record
-                  std::cout << "--here:::: " << file_record.to_string() << std::endl;
-                  std::cout << "sizeof(FileRecord) = " << sizeof(FileRecord) << "\n";
+                  // std::cout << "--here:::: " << file_record.to_string() << std::endl;
+                  // std::cout << "sizeof(FileRecord) = " << sizeof(FileRecord) << "\n";
                   (void) emit(file_record);
 
                   // ----------------- Shift pointer tonext entry block -----------------
@@ -337,7 +337,7 @@ namespace crawl
                 }
             }
           close(file_current.descriptor);
-          std::cout << "jump to new folder here" << std::endl;
+          // std::cout << "jump to new folder here" << std::endl;
         }
     }
   }
