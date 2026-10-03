@@ -26,16 +26,14 @@ namespace crawl
   std::vector<char *> global_file_list{};
 
 
+  //just a reference
   struct raw_bytes_returned
     {
     // header
     uint32_t length; // 4 bytes
     attribute_set_t returned_attrs; // 4 bytes
-
-    // atts
     attrreference_t name_ref; // 8 bytes
     uint32_t permissions; // +4 bytes internally
-    // uint32_t document_id;    // remove for now
     struct timespec crtime; // 16 bytes (Lands cleanly on byte 24)
     uint64_t file_id; // 8 bytes //Lands cleanly on byte 48
     uint64_t parent_id; // 8 bytes
@@ -144,18 +142,11 @@ namespace crawl
               | ATTR_CMN_OBJTYPE
               | ATTR_CMN_CRTIME
               | ATTR_CMN_ACCESSMASK
-              // | ATTR_CMN_DOCUMENT_ID
               | ATTR_CMN_FILEID
               | ATTR_CMN_PARENTID;
 
           attributes.fileattr =
               ATTR_FILE_TOTALSIZE;
-
-          // if (open_status == -1)
-          //   {
-          //     std::cout << "cant open: " << *starting_path << std::endl;
-          //     return;
-          //   }
 
           uint64_t options = 0;
           int numatts;

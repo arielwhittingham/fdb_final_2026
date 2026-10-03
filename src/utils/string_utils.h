@@ -8,23 +8,19 @@
 
 namespace utils
   {
-  using CharString =  std::array<char,255>;
+  using CharString =  std::array<char,255>; //use an alias for cleanliness
 
   inline CharString convert_string_view_to_char_array(std::string_view input_string)
     {
       CharString target_char_array{};
-      static constexpr std::size_t total_array_size = 255;
+      static constexpr std::size_t total_array_size = 255; //need to declare fixed size at compile time
       std::size_t copy_length = std::min(input_string.length(), total_array_size - 1);
       std::copy_n(input_string.data(), copy_length, target_char_array.begin());
       std::fill(target_char_array.begin() + copy_length, target_char_array.end(), '\0');
       return target_char_array;
     }
 
-  // std::tuple<CharString> range_from_text_search_predicate(std::string_view input_string)
-  //   {
-  //     std::tuple<CharString> output;
-  //
-  //   }
+
   inline std::tuple<CharString, CharString> range_from_text_search_exact_match(std::string_view input_string)
     {
       CharString conv = convert_string_view_to_char_array(input_string);
