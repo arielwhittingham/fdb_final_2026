@@ -125,7 +125,7 @@ void run_application()
       return recid;
       };
 
-    auto starting_dir = "/Users/arielwhittingham/Documents";
+    auto starting_dir = "/Users/arielwhittingham/Documents/fdb_parent";
     crawl::crawl_filesystem(starting_dir, sink);
 
     auto recore = database_file.read_from_file_to_memory(650);

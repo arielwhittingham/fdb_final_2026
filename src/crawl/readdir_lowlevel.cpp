@@ -144,6 +144,7 @@ namespace crawl
               | ATTR_CMN_ACCESSMASK
               | ATTR_CMN_FILEID
               | ATTR_CMN_PARENTID;
+              // | ATTR_DIR_ENTRYCOUNT; //uint32_t ;
 
           attributes.fileattr =
               ATTR_FILE_TOTALSIZE;
@@ -251,6 +252,17 @@ namespace crawl
                       cursor += sizeof(parent_id);
                     }
 
+                  // uint32_t entry_count      = 0;
+                  // bool     have_entry_count = false;
+                  //
+                  // if (returned_attrs.dirattr & ATTR_DIR_ENTRYCOUNT)
+                  //   {
+                  //     std::memcpy(
+                  //       &entry_count, cursor, sizeof(entry_count)
+                  //     );
+                  //     cursor += sizeof(entry_count);
+                  //     have_entry_count = true;
+                  //   }
 
                   off_t total_size = 0;
 
@@ -295,37 +307,38 @@ namespace crawl
 
                   */
 
-                  std::cout << "HEELOOOO:  "<<  file_current.new_path << std::endl;
+                      std::cout << "HEELOOOO:  "<<  file_current.new_path << std::endl;
 
-                  //makerec
+                      //makerec
 
-                  std::cout << crawl::global_file_counter  << std::endl;
-
-
-                  FileRecord file_record{};
-                  std::copy_n(
-                    name_pointer,
-                    std::min(std::strlen(name_pointer), file_record.file_name.size() - 1),
-                    file_record.file_name.begin());
-                  std::copy_n(
-                  file_current.new_path,
-                  std::min(std::strlen(file_current.new_path), file_record.file_tree.size() - 1),
-                  file_record.file_tree.begin());
-
-                    file_record.type = object_type;
-                    file_record.created_timestamp =  crtime.tv_sec;
-                    file_record.mode = permissions;
-                    file_record.inode = file_id;
-                    file_record.parent_inode = parent_id;
-                    file_record.size_bytes = total_size;
-                    std::cout << file_record.to_string()  << std::endl;
+                      std::cout << crawl::global_file_counter  << std::endl;
 
 
+                      FileRecord file_record{};
+                      std::copy_n(
+                        name_pointer,
+                        std::min(std::strlen(name_pointer), file_record.file_name.size() - 1),
+                        file_record.file_name.begin());
+                      std::copy_n(
+                      file_current.new_path,
+                      std::min(std::strlen(file_current.new_path), file_record.file_tree.size() - 1),
+                      file_record.file_tree.begin());
 
-                  //fill file record
-                  // std::cout << "--here:::: " << file_record.to_string() << std::endl;
-                  // std::cout << "sizeof(FileRecord) = " << sizeof(FileRecord) << "\n";
-                  (void) emit(file_record);
+                      file_record.type = object_type;
+                      file_record.created_timestamp =  crtime.tv_sec;
+                      file_record.mode = permissions;
+                      file_record.inode = file_id;
+                      file_record.parent_inode = parent_id;
+                      file_record.size_bytes = total_size;
+                      std::cout << file_record.to_string()  << std::endl;
+
+
+
+                      //fill file record
+                      // std::cout << "--here:::: " << file_record.to_string() << std::endl;
+                      // std::cout << "sizeof(FileRecord) = " << sizeof(FileRecord) << "\n";
+                      (void) emit(file_record);
+
 
                   // ----------------- Shift pointer tonext entry block -----------------
                   bufferstart += data_length;

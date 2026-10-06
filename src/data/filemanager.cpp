@@ -61,7 +61,6 @@ If all elements in the range are smaller than the given value, it returns the en
         return this->record_count;
       }
 
-
     uint32_t BufferManager::write_full_record_to_file(const schema::FileRecord &full_record_no_record_id)
       {
         uint32_t new_record_id = this->create_new_record_id();
@@ -75,9 +74,6 @@ If all elements in the range are smaller than the given value, it returns the en
                  * sizeof(Struc::StorageRecord));
         filestream.write(
           reinterpret_cast<const char *>(&full_record),sizeof(Struc::StorageRecord));
-        // std::cout << "\n wrote record #: " << full_record.to_string() << "\n";
-        // std::cout << "\n recordcount /  new record created: " << new_record_id <<
-        //     "\n";
         return new_record_id;
       }
 
