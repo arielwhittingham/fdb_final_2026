@@ -18,7 +18,7 @@ namespace Struc
     Internal = 1
     };
 
-  constexpr int PAGE_SIZE_IN_BYTES = 4096;
+  constexpr int PAGE_SIZE_IN_BYTES = 16384;
   // this is a sentinel commonly used to represent and invalid ID
   constexpr uint32_t invalid_page_id = UINT32_MAX;
   using FileNameDataType = std::array<char, 255>;
