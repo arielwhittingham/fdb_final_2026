@@ -125,13 +125,15 @@ void run_application()
       return recid;
       };
 
-    auto starting_dir = "/Users/arielwhittingham/Documents/fdb_parent";
+    auto starting_dir = "/Users/arielwhittingham/Documents";
     crawl::crawl_filesystem(starting_dir, sink);
 
-    auto recore = database_file.read_from_file_to_memory(650);
-    std::cout << " \n\n READ BACK RECORD: " << recore.to_string() << "\n";
+    // std::cout << " \n\n Crawl and B+Tree Generation Complete. " << std::endl;
 
-    std::cout << " \n\n Crawl and B+Tree Generation Complete. " << std::endl;
+    auto testr = database_file.read_from_file_to_memory(789);
+    std::cout << "TEST TO READ RECORD 789: " << testr.to_string() << std::endl;
+
+
 
 
     bool continue_querying = true;
@@ -148,12 +150,10 @@ void run_application()
             if (buffer) {
                 new_query_input = std::string(buffer);
 
-                // 2. Optional: Add to history so UP/DOWN arrows work too!
                 if (!new_query_input.empty()) {
                     add_history(buffer);
                 }
 
-                // 3. Free the memory allocated by readline
                 free(buffer);
             }
             std::string where_clause = query::get_where_clause(new_query_input);

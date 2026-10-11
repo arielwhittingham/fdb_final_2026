@@ -474,6 +474,9 @@ a split output
       {
         constexpr std::size_t array_size = Node::ARRAY_SIZE;
 
+        std::cout << "Add Record to Index: " << record.to_string() << std::endl;
+
+
         uint32_t leaf_id = find_leaf_from_record_val(record);
 
         // room in the LEAF NODE?

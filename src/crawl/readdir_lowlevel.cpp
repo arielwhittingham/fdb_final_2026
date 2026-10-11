@@ -307,13 +307,6 @@ namespace crawl
 
                   */
 
-                      std::cout << "HEELOOOO:  "<<  file_current.new_path << std::endl;
-
-                      //makerec
-
-                      std::cout << crawl::global_file_counter  << std::endl;
-
-
                       FileRecord file_record{};
                       std::copy_n(
                         name_pointer,

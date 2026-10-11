@@ -74,6 +74,7 @@ If all elements in the range are smaller than the given value, it returns the en
                  * sizeof(Struc::StorageRecord));
         filestream.write(
           reinterpret_cast<const char *>(&full_record),sizeof(Struc::StorageRecord));
+        std::cout << "record_id: " << new_record_id << std::endl;
         return new_record_id;
       }
 
