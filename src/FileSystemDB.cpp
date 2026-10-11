@@ -125,13 +125,13 @@ void run_application()
       return recid;
       };
 
-    auto starting_dir = "/Users/arielwhittingham/Documents";
+    auto starting_dir = "/Users/arielwhittingham/Documents/fdb_parent";
     crawl::crawl_filesystem(starting_dir, sink);
 
     // std::cout << " \n\n Crawl and B+Tree Generation Complete. " << std::endl;
 
-    auto testr = database_file.read_from_file_to_memory(789);
-    std::cout << "TEST TO READ RECORD 789: " << testr.to_string() << std::endl;
+    auto testr = database_file.read_from_file_to_memory(1416);
+    std::cout << "TEST TO READ RECORD 1416: " << testr.to_string() << std::endl;
 
 
 
